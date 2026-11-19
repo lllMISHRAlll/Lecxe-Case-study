@@ -93,7 +93,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <button
           type="submit"
           disabled={signIn.isPending}
-          className="rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
           {signIn.isPending ? "Signing in…" : "Sign in"}
         </button>

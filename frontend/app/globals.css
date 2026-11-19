@@ -1,25 +1,93 @@
 @import "tailwindcss";
 
-/* Design tokens: cool industrial neutrals with a deep teal accent. */
-@theme {
+/* Design tokens: cool industrial neutrals with a deep teal accent. Dark values below. */
+@theme static {
   --color-ink: #16202a;
   --color-muted: #5b6776;
   --color-line: #dde2e8;
   --color-canvas: #f3f5f7;
   --color-panel: #ffffff;
   --color-sunken: #f7f9fa;
+  --color-raised: #ffffff;
   --color-accent: #0f6e6a;
   --color-accent-strong: #0a5450;
   --color-accent-soft: #e2f0ef;
+  --color-on-accent: #ffffff;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
   --color-warn: #8a5a00;
   --color-warn-soft: #fff4dc;
   --color-ok: #1d7a46;
   --color-ok-soft: #e6f4ec;
+  --color-scrim: rgb(15 23 31 / 0.38);
+
+  --color-chart-1: #0f6e6a;
+  --color-chart-2: #c2410c;
+  --color-chart-3: #4f46e5;
+  --color-chart-4: #a16207;
+  --color-chart-5: #be185d;
+  --color-chart-6: #0369a1;
+
+  --color-sql-keyword: #7c3aed;
+  --color-sql-string: #0f766e;
+  --color-sql-number: #b45309;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --animate-rise: rise 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade: fade 200ms ease-out both;
+  --animate-slide-in: slide-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in {
+    from { opacity: 0.6; transform: translateX(-16px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ink: #e6ebf0;
+  --color-muted: #94a1af;
+  --color-line: #263039;
+  --color-canvas: #0e1419;
+  --color-panel: #141b21;
+  --color-sunken: #1a232b;
+  --color-raised: #1c252e;
+  --color-accent: #2fa59e;
+  --color-accent-strong: #4bbdb6;
+  --color-accent-soft: #123532;
+  --color-on-accent: #04201e;
+  --color-danger: #f2877e;
+  --color-danger-soft: #3a1714;
+  --color-warn: #f0c065;
+  --color-warn-soft: #33270c;
+  --color-ok: #6fd39b;
+  --color-ok-soft: #10301f;
+  --color-scrim: rgb(0 0 0 / 0.55);
+
+  --color-chart-1: #3cc1b8;
+  --color-chart-2: #f08a52;
+  --color-chart-3: #8f8af7;
+  --color-chart-4: #e1b64a;
+  --color-chart-5: #f07aa8;
+  --color-chart-6: #4fb3ea;
+
+  --color-sql-keyword: #b49bfa;
+  --color-sql-string: #5fd1c3;
+  --color-sql-number: #f2b26b;
+}
+
+:root {
+  color-scheme: light;
 }
 
 html,
@@ -32,6 +100,7 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 :focus-visible {
@@ -43,8 +112,53 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Thin, theme-aware scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+/* Typing cursor and waiting dots */
+.stream-caret {
+  display: inline-block;
+  width: 0.45em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: var(--color-accent);
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+@keyframes caret-blink {
+  to { visibility: hidden; }
+}
+.typing-dots span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  animation: dot 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Hide the scrollbar of the suggestion row; it scrolls by touch, wheel or keyboard. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }
@@ -52,12 +166,12 @@ body {
 
 /* SQL highlighting */
 .sql-keyword {
-  color: #7c3aed;
+  color: var(--color-sql-keyword);
   font-weight: 600;
 }
 .sql-string {
-  color: #0f766e;
+  color: var(--color-sql-string);
 }
 .sql-number {
-  color: #b45309;
+  color: var(--color-sql-number);
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { logout } from "@/lib/api";
 import type { User } from "@/lib/types";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface AppHeaderProps {
   user: User;
@@ -28,7 +29,7 @@ export function AppHeader({ user, onLoggedOut }: AppHeaderProps) {
       <div className="flex min-w-0 items-center gap-3">
         <span
           aria-hidden="true"
-          className="grid size-8 shrink-0 place-items-center rounded-md bg-accent text-sm font-bold text-white"
+          className="grid size-8 shrink-0 place-items-center rounded-md bg-accent text-sm font-bold text-on-accent"
         >
           PA
         </span>
@@ -39,14 +40,17 @@ export function AppHeader({ user, onLoggedOut }: AppHeaderProps) {
           <p className="truncate text-xs text-muted">Procurement Assistant</p>
         </div>
       </div>
+      <div className="flex shrink-0 items-center gap-2">
+      <ThemeToggle />
       <button
         type="button"
         onClick={handleLogout}
         disabled={leaving}
-        className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-sunken disabled:opacity-60"
+        className="h-9 shrink-0 rounded-lg border border-line px-3 text-sm font-medium text-ink transition hover:bg-sunken disabled:opacity-60"
       >
         Log out
       </button>
+      </div>
     </header>
   );
 }

@@ -101,4 +101,18 @@ describe("Workspace history and restore", () => {
       expect(screen.queryByText("Two vendors have overdue deliveries.")).not.toBeInTheDocument(),
     );
   });
+
+  it("opens history as an overlay without moving the chat", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Workspace user={userFor("procurement_manager")} />);
+    const log = screen.getByRole("log", { name: /conversation/i });
+    const before = log.previousElementSibling;
+
+    await user.click(screen.getByRole("button", { name: /history/i }));
+
+    expect(screen.getByRole("dialog", { name: "Conversations" })).toBeInTheDocument();
+    expect(log.previousElementSibling).toBe(before);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

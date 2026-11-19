@@ -159,7 +159,7 @@ export function POCard({ draft, busy, onConfirm, onCancel, onEdit }: POCardProps
             type="button"
             onClick={confirm}
             disabled={busy || confirming || !canConfirm}
-            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
             {confirming ? "Confirming…" : "Confirm"}
           </button>

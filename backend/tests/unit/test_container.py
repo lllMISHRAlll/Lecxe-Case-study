@@ -18,7 +18,9 @@ def model_of(settings):
 
 
 def test_openai_is_the_default_provider():
-    assert isinstance(model_of(Settings(openai_api_key=OPENAI_KEY)), OpenAILLM)
+    assert Settings.model_fields["llm_provider"].default == "openai"
+    assert isinstance(model_of(Settings(llm_provider="openai", openai_api_key=OPENAI_KEY)),
+                      OpenAILLM)
 
 
 def test_anthropic_provider_uses_the_anthropic_key_and_models():
@@ -54,7 +56,7 @@ def test_unknown_provider_is_rejected():
 
 def test_anthropic_key_in_the_openai_setting_is_reported(caplog):
     with caplog.at_level(logging.ERROR):
-        model_of(Settings(openai_api_key=ANTHROPIC_KEY))
+        model_of(Settings(llm_provider="openai", openai_api_key=ANTHROPIC_KEY))
     assert "looks like an Anthropic key" in caplog.text
 
 

@@ -1,44 +1,67 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useSmoothText } from "@/hooks/useSmoothText";
+import { RichText } from "@/lib/markdown";
 import type { ChatMessage } from "@/stores/chatStore";
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  /** What the assistant is doing right now, shown while waiting for the first words. */
+  status?: string;
   /** Extra content under an assistant message: choices, feedback and so on. */
   children?: ReactNode;
 }
 
-export function MessageBubble({ message, children }: MessageBubbleProps) {
+export function MessageBubble({ message, status, children }: MessageBubbleProps) {
   if (message.sender === "user") {
     return (
-      <div className="flex justify-end">
-        <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 text-sm text-white">
+      <div className="flex animate-rise justify-end">
+        <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-sm leading-relaxed text-on-accent shadow-sm">
           {message.text}
         </p>
       </div>
     );
   }
+  return <AssistantBubble message={message} status={status}>{children}</AssistantBubble>;
+}
 
-  const waiting = message.streaming && message.text === "" && !message.error;
+function AssistantBubble({ message, status, children }: MessageBubbleProps) {
+  const streaming = Boolean(message.streaming);
+  const text = useSmoothText(message.text, streaming);
+  const waiting = streaming && message.text === "" && !message.error;
+  const typing = streaming || text.length < message.text.length;
 
   return (
-    <div className="flex flex-col items-start gap-2">
-      <div className="max-w-[90%] rounded-2xl rounded-bl-sm border border-line bg-panel px-3.5 py-2 text-sm shadow-xs">
+    <div className="flex animate-rise flex-col items-start gap-2">
+      <div className="max-w-[90%] rounded-2xl rounded-bl-md border border-line bg-raised px-3.5 py-2.5 text-sm text-ink shadow-sm">
         {waiting ? (
-          <span className="text-muted">Thinking…</span>
+          <p role="status" className="flex items-center gap-2.5 text-muted">
+            <span aria-hidden="true" className="typing-dots inline-flex gap-1">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="animate-fade" key={status}>
+              {status ?? "Thinking"}…
+            </span>
+          </p>
         ) : (
-          message.text && <p className="whitespace-pre-wrap">{message.text}</p>
+          text && (
+            <div className="space-y-2">
+              <RichText text={text} />
+            </div>
+          )
         )}
-        {message.streaming && message.text !== "" && (
-          <span aria-hidden="true" className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-accent align-middle" />
-        )}
+        {!waiting && typing && text !== "" && <span aria-hidden="true" className="stream-caret" />}
         {message.poCreated && (
-          <p className="mt-2 rounded-md bg-ok-soft px-3 py-2 text-sm font-medium text-ok">
+          <p className="mt-2 animate-fade rounded-lg bg-ok-soft px-3 py-2 text-sm font-medium text-ok">
             Purchase order {message.poCreated.po_number} created for {message.poCreated.currency}{" "}
             {message.poCreated.total_amount}.
           </p>
         )}
         {message.error && (
-          <p role="alert" className="mt-2 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+          <p role="alert" className="mt-2 animate-fade rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
             {message.error.message}
             {message.error.reference && (
               <span className="block text-xs opacity-80">Reference: {message.error.reference}</span>
@@ -46,7 +69,7 @@ export function MessageBubble({ message, children }: MessageBubbleProps) {
           </p>
         )}
       </div>
-      {children}
+      {!streaming && children}
     </div>
   );
 }

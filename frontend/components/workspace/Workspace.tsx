@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { CannedButtons } from "@/components/chat/CannedButtons";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChoiceButtons } from "@/components/chat/ChoiceButtons";
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MessageList } from "@/components/chat/MessageList";
-import { ConversationList } from "@/components/history/ConversationList";
+import { HistoryDrawer } from "@/components/history/HistoryDrawer";
 import { OutputPane } from "@/components/output/OutputPane";
 import { POCard } from "@/components/po/POCard";
 import { useChatStream } from "@/hooks/useChatStream";
@@ -47,6 +47,24 @@ export function Workspace({ user }: WorkspaceProps) {
     void open(id);
   }
 
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
+  const status = streaming ? output.steps.at(-1)?.label : undefined;
+  const firstName = user.name.split(" ")[0];
+  const run = (query: { id: string; label: string }) =>
+    send({ button_id: query.id }, query.label);
+
+  const emptyState = (
+    <div className="m-auto flex w-full max-w-xl animate-fade flex-col items-center gap-5 py-6">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-ink">What would you like to know, {firstName}?</p>
+        <p className="mt-1 text-sm text-muted">
+          Pick a suggested question or ask your own about vendors, POs, payments or stock.
+        </p>
+      </div>
+      <CannedButtons variant="grid" disabled={streaming} onRun={run} />
+    </div>
+  );
+
   const renderExtras = (message: ChatMessage) => (
     <>
       {message.choices && (
@@ -83,50 +101,47 @@ export function Workspace({ user }: WorkspaceProps) {
     <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-1">
       <section
         aria-label="Chat"
-        className="flex min-h-0 min-w-0 flex-col border-b border-line bg-canvas lg:border-r lg:border-b-0"
+        className="relative flex min-h-0 min-w-0 flex-col border-b border-line bg-canvas lg:border-r lg:border-b-0"
       >
-        <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-          <h2 className="truncate text-sm font-semibold">{title ?? "New conversation"}</h2>
-          <div className="flex shrink-0 items-center gap-1">
+        <div className="flex items-center justify-between gap-2 border-b border-line bg-panel/60 px-4 py-2.5 backdrop-blur">
+          <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
+              aria-haspopup="dialog"
               aria-expanded={historyOpen}
-              aria-controls="history-panel"
-              onClick={() => setHistoryOpen((v) => !v)}
-              className="rounded-md px-2 py-1 text-xs font-medium text-ink hover:bg-sunken"
+              onClick={() => setHistoryOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink transition hover:bg-sunken"
             >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2" />
+              </svg>
               History
             </button>
-            <button
-              type="button"
-              onClick={startNew}
-              disabled={streaming}
-              className="rounded-md px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft disabled:opacity-50"
-            >
-              New chat
-            </button>
+            <h2 className="truncate text-sm font-semibold">{title ?? "New conversation"}</h2>
           </div>
+          <button
+            type="button"
+            onClick={startNew}
+            disabled={streaming}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-soft disabled:opacity-50"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            New chat
+          </button>
         </div>
-        {historyOpen && (
-          <div id="history-panel" className="max-h-64 overflow-y-auto border-b border-line bg-panel">
-            <ConversationList
-              activeId={conversationId}
-              onOpen={openFromHistory}
-              onDeleted={(id) => {
-                if (id === useChatStore.getState().conversationId) startNew();
-              }}
-            />
-          </div>
-        )}
         {openError && (
           <p className="border-b border-line bg-warn-soft px-4 py-2 text-xs text-warn">{openError}</p>
         )}
-        <MessageList messages={messages} renderExtras={renderExtras} />
-        <div className="flex flex-col gap-3 border-t border-line bg-panel px-4 py-3">
-          <CannedButtons
-            disabled={streaming}
-            onRun={(query) => send({ button_id: query.id }, query.label)}
-          />
+        <MessageList
+          messages={messages}
+          renderExtras={renderExtras}
+          status={status}
+          emptyState={emptyState}
+        />
+        <div className="flex flex-col gap-2.5 border-t border-line bg-panel px-4 py-3">
+          {messages.length > 0 && <CannedButtons disabled={streaming} onRun={run} />}
           <ChatInput
             disabled={streaming}
             focusSignal={editRequests}
@@ -134,10 +149,20 @@ export function Workspace({ user }: WorkspaceProps) {
             placeholder={
               draftOpen
                 ? "Describe a change, e.g. change price to 115"
-                : `Ask a question, ${user.name.split(" ")[0]}…`
+                : `Ask a question, ${firstName}…`
             }
           />
         </div>
+        {/* Laid over the chat pane (absolute), so nothing above moves when it opens. */}
+        <HistoryDrawer
+          open={historyOpen}
+          activeId={conversationId}
+          onClose={closeHistory}
+          onOpen={openFromHistory}
+          onDeleted={(id) => {
+            if (id === useChatStore.getState().conversationId) startNew();
+          }}
+        />
       </section>
       <OutputPane output={output} running={streaming} poSlot={poSlot} />
     </div>

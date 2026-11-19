@@ -21,6 +21,19 @@ def sqlalchemy_url(url: str) -> str:
     raise ValueError("Unsupported database URL scheme")
 
 
+# Hosted Postgres sits behind TCP proxies that silently drop idle connections. Without these,
+# a pooled connection can look alive and a query on it waits on a dead socket for minutes
+# (the server-side statement_timeout can't help, the server never sees the query).
+POOL_RECYCLE_SECONDS = 240
+_LIVENESS: dict[str, int] = {
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10,
+    "keepalives_count": 3,
+    "tcp_user_timeout": 15_000,  # ms; unacknowledged sends fail after this (Linux)
+}
+
+
 def read_options(statement_timeout_ms: int) -> str:
     return f"-c default_transaction_read_only=on -c statement_timeout={statement_timeout_ms}"
 
@@ -34,13 +47,12 @@ class Database:
 
     @classmethod
     def connect(cls, url: str, *, sslmode: str, statement_timeout_ms: int) -> Database:
-        write_args: dict[str, Any] = {"sslmode": sslmode, "connect_timeout": 10}
+        write_args: dict[str, Any] = {"sslmode": sslmode, "connect_timeout": 10, **_LIVENESS}
         read_args = {**write_args, "options": read_options(statement_timeout_ms)}
+        pool = {"pool_pre_ping": True, "pool_recycle": POOL_RECYCLE_SECONDS}
         return cls(
-            read_engine=create_engine(sqlalchemy_url(url), pool_pre_ping=True,
-                                      connect_args=read_args),
-            write_engine=create_engine(sqlalchemy_url(url), pool_pre_ping=True,
-                                       connect_args=write_args),
+            read_engine=create_engine(sqlalchemy_url(url), connect_args=read_args, **pool),
+            write_engine=create_engine(sqlalchemy_url(url), connect_args=write_args, **pool),
             read_connect_args=read_args,
             write_connect_args=write_args,
         )

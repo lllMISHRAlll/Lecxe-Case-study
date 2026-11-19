@@ -7,7 +7,7 @@ test.describe("E2E-01 login and role buttons", () => {
       await loginAs(page, user);
       const buttons = page.getByLabel("Suggested questions").getByRole("button");
       await expect(buttons).toHaveCount(user.buttons);
-      await expect(buttons.first()).toHaveText(user.first);
+      await expect(buttons.first()).toHaveAccessibleName(user.first);
     });
   }
 });

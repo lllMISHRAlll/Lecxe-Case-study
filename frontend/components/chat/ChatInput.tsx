@@ -52,7 +52,7 @@ export function ChatInput({ onSend, disabled, placeholder, focusSignal = 0 }: Ch
       <button
         type="submit"
         disabled={disabled || !trimmed}
-        className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
       >
         Send
       </button>

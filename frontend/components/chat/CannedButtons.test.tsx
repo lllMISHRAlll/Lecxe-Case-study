@@ -45,4 +45,22 @@ describe("CannedButtons", () => {
     renderWithProviders(<CannedButtons onRun={vi.fn()} />);
     expect(await screen.findByText(/couldn't load suggested questions/i)).toBeInTheDocument();
   });
+
+  it("grid variant shows uniform cards with label and description", async () => {
+    renderWithProviders(<CannedButtons onRun={vi.fn()} variant="grid" />);
+    const card = await screen.findByRole("button", { name: /Overdue deliveries/ });
+    expect(card).toHaveTextContent("Expected date passed");
+
+    const buttons = screen.getAllByRole("button");
+    const classes = new Set(buttons.map((b) => b.className));
+    expect(classes.size).toBe(1);
+    expect(screen.getByLabelText("Suggested questions")).toHaveClass("grid");
+  });
+
+  it("row variant gives every chip the same size", async () => {
+    renderWithProviders(<CannedButtons onRun={vi.fn()} />);
+    await screen.findByRole("button", { name: "Open POs" });
+    const classes = new Set(screen.getAllByRole("button").map((b) => b.className));
+    expect(classes.size).toBe(1);
+  });
 });

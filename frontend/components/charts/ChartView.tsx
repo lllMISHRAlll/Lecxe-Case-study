@@ -1,5 +1,6 @@
 "use client";
 
+import { compactNumber } from "@/lib/format";
 import type { ReactElement } from "react";
 import {
   Bar,
@@ -21,7 +22,7 @@ import {
 import type { ChartSpec } from "@/lib/types";
 
 /** Series colours, chosen to stay distinguishable and readable on white. */
-export const SERIES_COLORS = ["#0f6e6a", "#c2410c", "#4f46e5", "#a16207", "#be185d", "#0369a1"];
+export const SERIES_COLORS = [1, 2, 3, 4, 5, 6].map((n) => `var(--color-chart-${n})`);
 
 interface ChartViewProps {
   spec: ChartSpec;
@@ -30,7 +31,20 @@ interface ChartViewProps {
   height?: number;
 }
 
-const AXIS = { fontSize: 11, fill: "#5b6776" };
+const AXIS = { fontSize: 11, fill: "var(--color-muted)" };
+const GRID = "var(--color-line)";
+const TOOLTIP = {
+  contentStyle: {
+    background: "var(--color-raised)",
+    border: "1px solid var(--color-line)",
+    borderRadius: 10,
+    color: "var(--color-ink)",
+    fontSize: 12,
+  },
+  labelStyle: { color: "var(--color-ink)", fontWeight: 600 },
+  itemStyle: { color: "var(--color-ink)" },
+  cursor: { fill: "var(--color-sunken)" },
+};
 
 function renderChart(spec: ChartSpec, width?: number, height?: number): ReactElement | null {
   const size = { width, height };
@@ -40,10 +54,10 @@ function renderChart(spec: ChartSpec, width?: number, height?: number): ReactEle
     case "bar":
       return (
         <BarChart {...size} data={spec.data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey={spec.x} tick={AXIS} />
-          <YAxis tick={AXIS} />
-          <Tooltip />
+          <YAxis tick={AXIS} tickFormatter={compactNumber} width={56} />
+          <Tooltip {...TOOLTIP} />
           {series.length > 1 && <Legend />}
           {series.map((s) => (
             <Bar key={s.key} dataKey={s.key} fill={s.color} radius={[3, 3, 0, 0]} />
@@ -53,10 +67,10 @@ function renderChart(spec: ChartSpec, width?: number, height?: number): ReactEle
     case "horizontal_bar":
       return (
         <BarChart {...size} data={spec.data} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-          <XAxis type="number" tick={AXIS} />
+          <CartesianGrid stroke={GRID} strokeDasharray="3 3" horizontal={false} />
+          <XAxis type="number" tick={AXIS} tickFormatter={compactNumber} />
           <YAxis type="category" dataKey={spec.x} tick={AXIS} width={140} />
-          <Tooltip />
+          <Tooltip {...TOOLTIP} />
           {series.length > 1 && <Legend />}
           {series.map((s) => (
             <Bar key={s.key} dataKey={s.key} fill={s.color} radius={[0, 3, 3, 0]} />
@@ -66,10 +80,10 @@ function renderChart(spec: ChartSpec, width?: number, height?: number): ReactEle
     case "line":
       return (
         <LineChart {...size} data={spec.data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey={spec.x} tick={AXIS} />
-          <YAxis tick={AXIS} />
-          <Tooltip />
+          <YAxis tick={AXIS} tickFormatter={compactNumber} width={56} />
+          <Tooltip {...TOOLTIP} />
           {series.length > 1 && <Legend />}
           {series.map((s) => (
             <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} />
@@ -79,7 +93,7 @@ function renderChart(spec: ChartSpec, width?: number, height?: number): ReactEle
     case "pie":
       return (
         <PieChart {...size}>
-          <Tooltip />
+          <Tooltip {...TOOLTIP} />
           <Legend />
           <Pie data={spec.data} dataKey={spec.y[0]} nameKey={spec.x} outerRadius="75%" isAnimationActive={false}>
             {spec.data.map((_, i) => (
@@ -91,10 +105,10 @@ function renderChart(spec: ChartSpec, width?: number, height?: number): ReactEle
     case "scatter":
       return (
         <ScatterChart {...size}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid stroke={GRID} strokeDasharray="3 3" />
           <XAxis type="number" dataKey={spec.x} name={spec.x} tick={AXIS} />
           <YAxis type="number" dataKey={spec.y[0]} name={spec.y[0]} tick={AXIS} />
-          <Tooltip />
+          <Tooltip {...TOOLTIP} />
           <Scatter data={spec.data} fill={SERIES_COLORS[0]} />
         </ScatterChart>
       );
