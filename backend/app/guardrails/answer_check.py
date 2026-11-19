@@ -70,8 +70,11 @@ def _close(value: float, candidates: set[float]) -> bool:
     return any(abs(value - c) <= max(abs(c) * 0.01, 0.5) for c in candidates)
 
 
-def check_answer_numbers(answer: str, result: QueryResult) -> AnswerCheck:
+def check_answer_numbers(answer: str, result: QueryResult, context: str = "") -> AnswerCheck:
+    """`context` (question, notes such as latest data dates) may also supply numbers."""
     plain, percents = _allowed(result)
+    plain.update(v for v, _, _ in _numbers_in_text(context))
+    plain.update(float(n) for n in re.findall(r"\d+", context))
     unknown = []
     for value, is_percent, raw in _numbers_in_text(answer):
         if is_percent:

@@ -138,7 +138,9 @@ def test_graph_09_po_conversation_creates_a_po(make_service, fresh_db):
         {"vendor": "Summit Engineering", "lines": [{"item": "MS Tube 25x40"}]},
         {"lines": [{"action": "update", "quantity": 50, "unit_price": 120}]},
     ]
-    service, _, _ = make_service(base_script(**{Task.PO_EXTRACT: extractions}))
+    service, _, _ = make_service(base_script(**{
+        Task.PO_EXTRACT: extractions,
+        Task.ROUTE: lambda s, u: {"intent": "raise_po", "confidence": 0.9, "reason": ""}}))
 
     first = run(service, PM, message="Raise a PO for MS Tube 25x40 from Summit Engineering")
     conversation_id = events_of(first, "conversation")[0]["conversation_id"]

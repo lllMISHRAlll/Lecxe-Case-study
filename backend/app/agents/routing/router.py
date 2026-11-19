@@ -97,5 +97,8 @@ class IntentRouter:
             return self._llm.structured(Task.ROUTE, system=ROUTE_SYSTEM, user=text,
                                         schema=RouteClassification)
         except LLMOutputError:
-            log.warning("Router output unusable twice; asking the user to clarify")
+            log.warning("Router output unusable twice; falling back")
+            return None
+        except Exception:
+            log.warning("Router classifier failed; falling back", exc_info=True)
             return None

@@ -89,3 +89,12 @@ def test_classifier_prompt_contains_the_message():
     r, llm = router({"intent": "analytics", "confidence": 0.9, "reason": ""})
     r.route("Which vendors are overdue?")
     assert "Which vendors are overdue?" in llm.calls[0].user
+
+
+def test_classifier_crash_falls_back_to_the_open_draft():
+    def broken(system, user):
+        raise ConnectionError("network down")
+
+    llm = ScriptedLLM({Task.ROUTE: broken})
+    assert IntentRouter(llm).route("50 at 120", has_open_draft=True).intent is Intent.RAISE_PO
+    assert IntentRouter(llm).route("stock stuff").intent is Intent.CLARIFY
