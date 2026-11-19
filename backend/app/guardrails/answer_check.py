@@ -2,6 +2,7 @@
 
 Allowed: every number in the rows (including numbers inside text cells), column totals,
 averages, the row count, and each value's share of its column total as a percentage.
+A percentage may also match a value or average directly, for columns that hold percentages.
 Rounding and 'thousand / lakh / crore / million' scales are tolerated.
 """
 
@@ -78,7 +79,8 @@ def check_answer_numbers(answer: str, result: QueryResult, context: str = "") ->
     unknown = []
     for value, is_percent, raw in _numbers_in_text(answer):
         if is_percent:
-            if not _close(value, percents):
+            # A percentage may be a share of a total, or a value already in a % column.
+            if not (_close(value, percents) or _close(value, plain)):
                 unknown.append(raw)
         elif not (_close(value, plain) or (1900 <= value <= 2100 and value.is_integer())):
             unknown.append(raw)
@@ -90,7 +92,7 @@ def template_answer(result: QueryResult) -> str:
     if not result.rows:
         return "No rows matched your question."
     first = result.records()[0]
-    details = ", ".join(f"{k} {v}" for k, v in first.items())
+    details = ", ".join(f"{k} {v}" for k, v in first.items() if v is not None)
     more = " (showing the first 500)" if result.truncated else ""
     return (f"Here's what the data shows: {result.row_count} rows{more}. The first one is "
             f"{details}. See the table for the full result.")

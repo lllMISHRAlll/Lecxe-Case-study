@@ -13,7 +13,7 @@ from app.guardrails.answer_check import check_answer_numbers, template_answer
 from app.guardrails.preprocess import InputRejectedError, preprocess
 from app.llm.tasks import Task
 from app.rbac.capabilities import Capability, has_capability
-from app.sql.canned import CannedContext, latest_activity
+from app.sql.canned import CannedContext, ChartHint, latest_activity
 from app.sql.executor import QueryFailedError
 from app.viz.chart_builder import build_chart
 from app.viz.reducer import reduce_result
@@ -95,8 +95,10 @@ class MainNodes:
         ctx = CannedContext(today=self.d.clock.today(), fx_usd_inr=self.d.settings.fx_usd_inr)
         emit("sql", {"sql": query.sql.strip(), "source": "button", "attempt": 1})
         step("load_canned_sql", "Loaded the saved query")
+        # Saved questions are curated: without a chart setting they show the table only.
+        hint = query.chart or ChartHint("table", "", ())
         return {"sql": query.sql, "sql_params": query.params(ctx), "sql_source": "button",
-                "chart_hint": query.chart, "notes": [n for n in [query.note(ctx)] if n],
+                "chart_hint": hint, "notes": [n for n in [query.note(ctx)] if n],
                 "attempts": 1, "payload": {"sql": {"sql": query.sql.strip(), "source": "button",
                                                    "attempt": 1}}}
 

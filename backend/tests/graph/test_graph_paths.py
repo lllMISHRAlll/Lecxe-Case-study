@@ -225,3 +225,10 @@ def test_destructive_request_gets_a_read_only_reply_without_any_llm_call(make_se
     reply = "".join(t["text"] for t in events_of(events, "token"))
     assert "read" in reply and "can't change or delete" in reply
     assert llm.calls == []
+
+
+def test_saved_questions_without_a_chart_setting_show_a_table_without_asking_the_llm(make_service):
+    service, llm, _ = make_service(base_script(**{Task.ANSWER: lambda s, u: "Scorecard."}))
+    events = run(service, BO, button_id="bo_vendor_scorecard")
+    assert events_of(events, "chart")[0]["type"] == "table"
+    assert llm.calls_for(Task.CHART) == []

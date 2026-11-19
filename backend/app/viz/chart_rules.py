@@ -102,6 +102,19 @@ class ChartDecider:
             return TABLE
         numeric = {c.name for c in result.columns if c.type == "number"}
         if choice.type == "table" or choice.x not in result.column_names or not choice.y \
-                or not set(choice.y) <= numeric:
+                or not set(choice.y) <= numeric or _mostly_blank(result, choice.y):
             return TABLE
         return ChartDecision(choice.type, choice.x, choice.y, "llm")
+
+
+MAX_BLANK_SHARE = 0.1
+
+
+def _mostly_blank(result: QueryResult, columns: list[str]) -> bool:
+    """Blank values would be drawn as zeros; don't chart a measure that is often missing."""
+    for name in columns:
+        index = result.column_names.index(name)
+        blanks = sum(1 for row in result.rows if row[index] is None)
+        if result.rows and blanks / len(result.rows) > MAX_BLANK_SHARE:
+            return True
+    return False

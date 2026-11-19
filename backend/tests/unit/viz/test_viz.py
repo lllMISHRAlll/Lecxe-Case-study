@@ -125,3 +125,10 @@ def test_line_chart_dates_are_iso_strings():
 def test_table_spec_has_no_data():
     data = result([("total", "number")], [(5,)])
     assert build_chart(data, decider.decide(data, ""), title="t")["data"] == []
+
+
+def test_llm_chart_on_a_mostly_blank_measure_falls_back_to_a_table():
+    llm = ScriptedLLM({Task.CHART: [{"type": "scatter", "x": "fulfil", "y": ["on_time"]}]})
+    data = result([("vendor", "text"), ("fulfil", "number"), ("on_time", "number")],
+                  [("A", 10, None), ("B", 20, None), ("C", 30, 50), ("D", 40, None)])
+    assert ChartDecider(llm=llm).decide(data, "scorecard").type == "table"
