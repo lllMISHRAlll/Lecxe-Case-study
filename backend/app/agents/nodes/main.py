@@ -81,10 +81,11 @@ class MainNodes:
         return {"question": question}
 
     def route_intent(self, state: AgentState) -> dict[str, Any]:
-        has_draft = self.d.history.open_draft(state["conversation_id"]) is not None
+        draft = self.d.history.open_draft(state["conversation_id"])
         action = (state.get("po_action") or {}).get("type")
         decision = self.d.router.route(state["question"], button_id=state.get("button_id"),
-                                       po_action=action, has_open_draft=has_draft)
+                                       po_action=action, has_open_draft=draft is not None,
+                                       pending_question=draft.last_question if draft else None)
         step("route_intent", ROUTE_LABELS[decision.intent.value])
         return {"intent": decision.intent.value, "po_command": decision.po_command}
 

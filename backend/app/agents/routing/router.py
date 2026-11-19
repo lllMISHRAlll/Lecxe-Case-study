@@ -25,6 +25,13 @@ _SMALL_TALK = re.compile(
     r"^\s*(hi|hello|hey|thanks|thank you|thx|ok|okay|help|good (morning|afternoon|evening)|"
     r"what can you do|who are you)\b[\s!.?]*$", re.I)
 _CANCEL = re.compile(r"^\s*(cancel|stop|discard|never mind|nevermind|abort)\b", re.I)
+# Short replies that answer the PO question just asked ("all 120", "line 2: 85", "yes").
+_DRAFT_REPLY = re.compile(
+    r"^\s*(all|line|yes|yep|yeah|ok|okay|sure|no|same|use|keep|confirm|change|make it|set)\b"
+    r"|\d", re.I)
+_QUESTION = re.compile(r"\?\s*$|^\s*(what|which|who|how|show|list|top|give|find|when|where)\b",
+                       re.I)
+MAX_DRAFT_REPLY_WORDS = 8
 
 ROUTE_SYSTEM = (
     "Classify a message sent to a procurement and inventory assistant.\n"
@@ -68,19 +75,21 @@ class IntentRouter:
         self._llm = llm
 
     def route(self, text: str, *, button_id: str | None = None, po_action: str | None = None,
-              has_open_draft: bool = False) -> RouteDecision:
+              has_open_draft: bool = False, pending_question: str | None = None) -> RouteDecision:
         if button_id:
             return RouteDecision(Intent.CANNED, 1.0, "rule")
         if po_action:
             return RouteDecision(Intent.RAISE_PO, 1.0, "rule", po_command=po_action)
         if has_open_draft and _CANCEL.search(text):
             return RouteDecision(Intent.RAISE_PO, 1.0, "rule", po_command="cancel")
+        if has_open_draft and _is_draft_reply(text):
+            return RouteDecision(Intent.RAISE_PO, 1.0, "rule")
         if _PO_REQUEST.search(text):
             return RouteDecision(Intent.RAISE_PO, 1.0, "rule")
         if _SMALL_TALK.search(text):
             return RouteDecision(Intent.CHIT_CHAT, 1.0, "rule")
 
-        classification = self._classify(text)
+        classification = self._classify(text, has_open_draft, pending_question)
         if classification is None:
             fallback = Intent.RAISE_PO if has_open_draft else Intent.CLARIFY
             return RouteDecision(fallback, 0.0, "fallback")
@@ -92,11 +101,22 @@ class IntentRouter:
             return RouteDecision(Intent.CLARIFY, classification.confidence, "llm")
         return RouteDecision(intent, classification.confidence, "llm")
 
-    def _classify(self, text: str) -> RouteClassification | None:
+    def _classify(self, text: str, has_open_draft: bool = False,
+                  pending_question: str | None = None) -> RouteClassification | None:
+        user = text
+        if has_open_draft:
+            asked = f" The assistant last asked: {pending_question}" if pending_question else ""
+            user = (f"Context: a purchase order draft is open.{asked} Replies that answer it are "
+                    f"raise_po.\nMessage: {text}")
         try:
-            return self._llm.structured(Task.ROUTE, system=ROUTE_SYSTEM, user=text,
+            return self._llm.structured(Task.ROUTE, system=ROUTE_SYSTEM, user=user,
                                         schema=RouteClassification)
         except LLMOutputError:
             # Unusable output is our problem to absorb; a failing AI service is not hidden.
             log.warning("Router output unusable twice; falling back")
             return None
+
+
+def _is_draft_reply(text: str) -> bool:
+    return (len(text.split()) <= MAX_DRAFT_REPLY_WORDS and not _QUESTION.search(text)
+            and bool(_DRAFT_REPLY.search(text)))

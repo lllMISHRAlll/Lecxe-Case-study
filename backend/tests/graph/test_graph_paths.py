@@ -359,3 +359,25 @@ def test_po_bulk_quantities_fill_existing_lines_and_vendor_question_offers_butto
         ("BO-EL-0001", 10.0),
         ("BO-MC-0001", 10.0),
     ]
+
+
+def test_short_price_answer_during_a_draft_stays_in_the_po_flow(make_service):
+    extractions = [
+        {
+            "vendor": "Zenith Steels",
+            "lines": [{"item": "RM-MT-0001", "quantity": 5}, {"item": "BO-EL-0001", "quantity": 2}],
+        },
+        {"lines": [{"action": "update", "apply_to": "all", "unit_price": 120}]},
+    ]
+
+    def route(system, user):  # would wrongly say analytics if asked
+        return {"intent": "analytics", "confidence": 0.95, "reason": ""}
+
+    service, llm, _ = make_service(base_script(**{Task.PO_EXTRACT: extractions, Task.ROUTE: route}))
+    first = run(service, PM, message="Raise a PO for Zenith Steels")
+    conversation_id = events_of(first, "conversation")[0]["conversation_id"]
+    second = run(service, PM, conversation_id=conversation_id, message="all 120")
+
+    card = events_of(second, "po_draft")[0]["draft"]
+    assert [ln["unit_price"] for ln in card["lines"]] == ["120.00", "120.00"]
+    assert llm.calls_for(Task.SCHEMA_LINK) == []
