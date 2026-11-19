@@ -82,7 +82,7 @@ class SqlAgentNodes:
             self.d.explainer.check(validated.sql)
         except SqlRejectedError as exc:
             show(state["sql"] or "")
-            step("validate_sql", "Query needs a fix")
+            step("validate_sql", "Query needs a fix", "warn")
             update: dict[str, Any] = {"sql_errors": [*state.get("sql_errors", []), str(exc)],
                                       "sql_valid": False}
             if state.get("attempts", 1) >= MAX_ATTEMPTS:

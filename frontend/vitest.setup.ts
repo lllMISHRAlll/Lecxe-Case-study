@@ -1,9 +1,12 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { resetChatStore } from "./stores/chatStore";
 import { mockState } from "./tests/msw/handlers";
 import { server } from "./tests/msw/server";
+
+// Streamed text and step timelines reveal over a few hundred ms; allow for a busy machine.
+configure({ asyncUtilTimeout: 3000 });
 
 // Recharts and responsive layouts need these browser APIs, which jsdom lacks.
 class ResizeObserverStub {

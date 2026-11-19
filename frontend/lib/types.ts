@@ -56,9 +56,13 @@ export interface SqlPayload {
   attempt: number;
 }
 
+export type StepStatus = "done" | "warn" | "error";
+
 export interface StepPayload {
   node: string;
   label: string;
+  /** `warn`: needed a retry. `error`: failed. Older stored steps have no status (done). */
+  status?: StepStatus;
 }
 
 export interface Choice {

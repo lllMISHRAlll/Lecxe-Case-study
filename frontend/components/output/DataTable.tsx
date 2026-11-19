@@ -1,4 +1,5 @@
 import type { RowsPayload } from "@/lib/types";
+import { ExportMenu } from "./ExportMenu";
 
 const numberFormat = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
 
@@ -9,16 +10,25 @@ function formatCell(value: string | number | boolean | null): string {
   return value;
 }
 
-export function DataTable({ rows }: { rows: RowsPayload }) {
+interface DataTableProps {
+  rows: RowsPayload;
+  /** Names the exported file, e.g. the conversation title. */
+  exportName?: string | null;
+}
+
+export function DataTable({ rows, exportName }: DataTableProps) {
   const count = `${rows.row_count} ${rows.row_count === 1 ? "row" : "rows"}`;
 
   return (
-    <section aria-labelledby="data-heading" className="flex min-w-0 flex-col gap-2">
+    <section aria-labelledby="data-heading" className="flex min-w-0 animate-rise flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h3 id="data-heading" className="text-xs font-semibold uppercase tracking-wider text-muted">
           Data
         </h3>
-        <span className="text-xs text-muted tabular">{count}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted tabular">{count}</span>
+          {rows.rows.length > 0 && <ExportMenu rows={rows} name={exportName} />}
+        </div>
       </div>
       {rows.truncated && (
         <p className="rounded-md bg-warn-soft px-3 py-2 text-xs text-warn">

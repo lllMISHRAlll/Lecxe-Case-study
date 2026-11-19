@@ -53,8 +53,9 @@ export function MessageList({ messages, renderExtras, status, emptyState }: Mess
       role="log"
       aria-label="Conversation"
       aria-live="polite"
-      className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-5 sm:px-5"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-5"
     >
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col gap-4">
       {messages.length === 0 &&
         (emptyState ?? (
           <div className="m-auto max-w-sm text-center text-sm text-muted">
@@ -71,6 +72,7 @@ export function MessageList({ messages, renderExtras, status, emptyState }: Mess
           {message.sender === "assistant" && renderExtras?.(message)}
         </MessageBubble>
       ))}
+      </div>
     </div>
   );
 }

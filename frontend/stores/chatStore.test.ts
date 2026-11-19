@@ -62,15 +62,63 @@ describe("chat store", () => {
     expect(store().output.chart?.type).toBe("bar");
   });
 
-  it("clears the previous result when a new turn starts but keeps the PO draft", () => {
+  it("keeps the previous result while a new turn has nothing to show yet", () => {
+    store().startTurn("q");
+    store().applyEvent({ event: "sql", data: { sql: "SELECT 1", source: "generated", attempt: 1 } });
+    store().finishTurn();
+
+    store().startTurn("hi");
+    store().applyEvent({ event: "step", data: { node: "preprocess", label: "Read your message" } });
+    store().applyEvent({ event: "step", data: { node: "route_intent", label: "Replying" } });
+
+    expect(store().output.sql?.sql).toBe("SELECT 1");
+    expect(store().outputLive).toBe(false);
+    expect(store().turnSteps.map((s) => s.label)).toEqual(["Read your message", "Replying"]);
+  });
+
+  it("replaces the previous result once the new turn starts producing one, keeping the PO draft", () => {
     store().startTurn("q");
     store().applyEvent({ event: "sql", data: { sql: "SELECT 1", source: "generated", attempt: 1 } });
     store().applyEvent({ event: "po_draft", data: { draft: makeDraft() } });
     store().finishTurn();
+    const before = store().output.turn;
 
     store().startTurn("next");
+    store().applyEvent({ event: "step", data: { node: "guard_input", label: "Safety checks passed" } });
+    expect(store().output.sql?.sql).toBe("SELECT 1");
+    store().applyEvent({ event: "step", data: { node: "schema_link", label: "Found the relevant tables" } });
+
     expect(store().output.sql).toBeNull();
     expect(store().output.poDraft?.status).toBe("open");
+    expect(store().output.turn).toBe(before + 1);
+    expect(store().outputLive).toBe(true);
+    expect(store().output.steps.map((s) => s.node)).toEqual(["guard_input", "schema_link"]);
+    expect(store().output.question).toBe("next");
+
+    store().applyEvent({ event: "step", data: { node: "generate_sql", label: "Wrote a query" } });
+    expect(store().output.steps).toHaveLength(3);
+    expect(store().output.turn).toBe(before + 1);
+  });
+
+  it("a result event claims the pane even without a result step first", () => {
+    store().startTurn("q");
+    store().applyEvent({ event: "step", data: { node: "route_intent", label: "Using a saved query" } });
+    store().applyEvent({
+      event: "rows",
+      data: { columns: [{ name: "a", type: "number" }], rows: [[1]], row_count: 1, truncated: false },
+    });
+    expect(store().outputLive).toBe(true);
+    expect(store().output.steps.map((s) => s.node)).toEqual(["route_intent"]);
+  });
+
+  it("a refused PO request does not take over the pane", () => {
+    store().startTurn("raise a po");
+    store().applyEvent({
+      event: "step",
+      data: { node: "check_po_permission", label: "Not allowed for this role", status: "error" },
+    });
+    expect(store().outputLive).toBe(false);
+    expect(store().output.steps).toEqual([]);
   });
 
   it("attaches choices, errors and the server message id to the answer", () => {
@@ -125,6 +173,27 @@ describe("chat store", () => {
     expect(store().output.rows?.row_count).toBe(2);
     expect(store().output.steps).toHaveLength(1);
     expect(store().output.poDraft).toBeNull();
+  });
+
+  it("restores the latest answer that had a result, not a later chat reply", () => {
+    const detail = conversationDetails["conv-1"];
+    store().loadConversation({
+      ...detail,
+      messages: [
+        ...detail.messages,
+        { id: "m7", sender: "user", text: "thanks", payload: null, created_at: "2026-11-19T09:01:00Z" },
+        {
+          id: "m8",
+          sender: "assistant",
+          text: "You're welcome.",
+          payload: { steps: [{ node: "route_intent", label: "Replying" }] },
+          created_at: "2026-11-19T09:01:02Z",
+        },
+      ],
+    });
+    expect(store().output.sql?.sql).toContain("SELECT vendor");
+    expect(store().output.steps.map((s) => s.label)).toEqual(["Ran the query"]);
+    expect(store().output.question).toBe("Which vendors are late?");
   });
 
   it("restores an open PO draft", () => {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from langgraph.config import get_stream_writer
 
@@ -19,8 +19,12 @@ def emit(event: str, data: dict[str, Any]) -> None:
     get_stream_writer()(StreamEvent(event, data))
 
 
-def step(node: str, label: str) -> None:
-    emit("step", {"node": node, "label": label})
+StepStatus = Literal["done", "warn", "error"]
+
+
+def step(node: str, label: str, status: StepStatus = "done") -> None:
+    """Report a finished node. `warn` means it needed a retry, `error` that it failed."""
+    emit("step", {"node": node, "label": label, "status": status})
 
 
 def stream_text(text: str) -> None:

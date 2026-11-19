@@ -24,6 +24,7 @@ class ConversationEvent(_Event):
 class StepEvent(_Event):
     node: str
     label: str
+    status: Literal["done", "warn", "error"] = "done"
 
 
 class SqlEvent(_Event):

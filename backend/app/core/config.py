@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     openai_model_sql: str = "gpt-4o"
     anthropic_api_key: SecretStr = SecretStr("")
     anthropic_model_fast: str = "claude-haiku-5-5"
-    anthropic_model_strong: str = "claude-opus-5-5"
+    anthropic_model_strong: str = "claude-sonnet-5-5"
     fake_llm: bool = False
 
     # Auth

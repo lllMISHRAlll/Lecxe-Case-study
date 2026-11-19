@@ -92,7 +92,7 @@ describe("Workspace streaming", () => {
 
     expect(await screen.findByText("Zenith leads spend.")).toBeInTheDocument();
     const output = screen.getByRole("region", { name: /results/i });
-    expect(within(output).getByText("Ran the query")).toBeInTheDocument();
+    expect(await within(output).findByText("Ran the query")).toBeInTheDocument();
     expect(within(output).getByText("Understood the question")).toBeInTheDocument();
     expect(within(output).getByText(/SELECT/)).toBeInTheDocument();
     expect(within(output).getByRole("table")).toBeInTheDocument();
@@ -194,8 +194,51 @@ describe("Workspace streaming", () => {
     expect(screen.queryByRole("log", { name: /conversation/i })?.textContent ?? "").not.toContain("   ");
   });
 
-  it("shows an empty state before the first question", () => {
+  it("hides the results pane until there is a result to show", () => {
     renderWorkspace();
-    expect(screen.getByText(/results appear here/i)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /results/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/what would you like to know/i)).toBeInTheDocument();
+  });
+
+  it("keeps the pane hidden for a chat-only reply", async () => {
+    server.use(
+      streamHandler([
+        sse("step", { node: "preprocess", label: "Read your message", status: "done" }),
+        sse("step", { node: "route_intent", label: "Replying", status: "done" }),
+        sse("token", { text: "Hello there." }),
+        sse("done", { message_id: "m1" }),
+      ]),
+    );
+    const user = renderWorkspace();
+    await ask(user, "hi");
+    expect(await screen.findByText("Hello there.")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /results/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the pane as soon as the turn starts working on a result", async () => {
+    const gate = deferred();
+    server.use(
+      http.post("/api/chat/stream", () => {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            controller.enqueue(encoder.encode(sse("step", { node: "route_intent", label: "Answering from the data" })));
+            controller.enqueue(encoder.encode(sse("step", { node: "schema_link", label: "Found the relevant tables" })));
+            await gate.promise;
+            controller.enqueue(encoder.encode(sse("done", { message_id: "m1" })));
+            controller.close();
+          },
+        });
+        return new HttpResponse(stream, { headers: { "Content-Type": "text/event-stream" } });
+      }),
+    );
+    const user = renderWorkspace();
+    await ask(user, "Which vendors are late?");
+
+    const output = await screen.findByRole("region", { name: /results/i });
+    expect(within(output).getByText(/working/i)).toBeInTheDocument();
+    expect(await within(output).findByText("Found the relevant tables")).toBeInTheDocument();
+    gate.resolve();
+    await waitFor(() => expect(within(output).queryByText(/working/i)).not.toBeInTheDocument());
   });
 });

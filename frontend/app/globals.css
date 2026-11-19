@@ -39,6 +39,7 @@
   --animate-rise: rise 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-fade: fade 200ms ease-out both;
   --animate-slide-in: slide-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-pane-in: pane-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(6px); }
@@ -47,6 +48,10 @@
   @keyframes fade {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+  @keyframes pane-in {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: none; }
   }
   @keyframes slide-in {
     from { opacity: 0.6; transform: translateX(-16px); }
@@ -147,6 +152,27 @@ body {
 @keyframes dot {
   0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Step timeline: the status dot pops in, the working label shimmers. */
+.step-pop {
+  animation: step-pop 260ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+@keyframes step-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg, var(--color-muted) 0%, var(--color-ink) 50%, var(--color-muted) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 }
 
 /* Hide the scrollbar of the suggestion row; it scrolls by touch, wheel or keyboard. */

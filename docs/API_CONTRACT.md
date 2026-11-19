@@ -49,7 +49,7 @@ Response: `text/event-stream`. Each event is `event: <type>` then `data: <json>`
 | Event | Data | UI |
 |---|---|---|
 | `conversation` | `{ "conversation_id", "title" }` | First event of every stream |
-| `step` | `{ "node", "label" }` | Step tracker ticks |
+| `step` | `{ "node", "label", "status" }` | Step tracker ticks; status is `done`, `warn` (needed a retry) or `error` |
 | `sql` | `{ "sql", "source": "button" \| "generated" \| "fixed", "attempt" }` | SQL panel |
 | `rows` | `{ "columns": [{ "name", "type" }], "rows": [[...]], "row_count", "truncated" }` | Data table |
 | `chart` | `ChartSpec` | Chart |

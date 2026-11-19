@@ -68,7 +68,7 @@ class MainNodes:
             verdict = self.d.guard.check(state["question"])
             if not verdict.allowed:
                 log.info("Blocked message: %s", verdict.category)
-                step("guard_input", "Message blocked")
+                step("guard_input", "Message blocked", "error")
                 reply = READ_ONLY if verdict.category in ("destructive", "raw_sql") else BLOCKED
                 return {"reply": reply, "reply_mode": "text"}
         step("guard_input", "Safety checks passed")
@@ -107,7 +107,7 @@ class MainNodes:
         try:
             result = self.d.executor.run(state["sql"] or "", state.get("sql_params") or {})
         except QueryFailedError as exc:
-            step("execute_sql", "The query failed")
+            step("execute_sql", "The query failed", "error")
             errors = [*state.get("sql_errors", []), str(exc)]
             can_retry = (state.get("sql_source") != "button"
                          and state.get("attempts", 1) < MAX_ATTEMPTS)
@@ -182,7 +182,7 @@ class MainNodes:
     def check_po_permission(self, state: AgentState) -> dict[str, Any]:
         if has_capability(state["user"].role, Capability.PO_CREATE):
             return {}
-        step("check_po_permission", "Not allowed for this role")
+        step("check_po_permission", "Not allowed for this role", "error")
         return {"reply": DENIED, "reply_mode": "text"}
 
     def ask_clarify(self, state: AgentState) -> dict[str, Any]:

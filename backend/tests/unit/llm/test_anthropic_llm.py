@@ -41,7 +41,7 @@ class FakeMessages:
             get_final_message=lambda: SimpleNamespace(stop_reason=self._stop))
 
 
-def llm_with(messages, strong="claude-opus-5-5", fast="claude-haiku-5-5", trace=None):
+def llm_with(messages, strong="claude-sonnet-5-5", fast="claude-haiku-5-5", trace=None):
     client = SimpleNamespace(beta=SimpleNamespace(messages=messages))
     return AnthropicLLM(client=client, fast_model=fast, strong_model=strong, trace=trace)
 
@@ -68,7 +68,7 @@ def test_strong_tasks_use_the_strong_model_high_effort_and_server_side_fallbacks
 
     assert sql == "SELECT 1"
     kwargs = messages.calls[0][1]
-    assert kwargs["model"] == "claude-opus-5-5"
+    assert kwargs["model"] == "claude-sonnet-5-5"
     assert kwargs["output_config"] == {"effort": "high"}
     assert kwargs["fallbacks"] == "default"
     assert kwargs["betas"] == ["server-side-fallback-2026-07-01"]

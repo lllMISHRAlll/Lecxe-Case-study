@@ -27,7 +27,7 @@ def test_anthropic_provider_uses_the_anthropic_key_and_models():
     llm = model_of(Settings(llm_provider="anthropic", anthropic_api_key=ANTHROPIC_KEY,
                             openai_api_key=OPENAI_KEY))
     assert isinstance(llm, AnthropicLLM)
-    assert (llm.fast_model, llm.strong_model) == ("claude-haiku-5-5", "claude-opus-5-5")
+    assert (llm.fast_model, llm.strong_model) == ("claude-haiku-5-5", "claude-sonnet-5-5")
 
 
 def test_anthropic_models_can_be_overridden():

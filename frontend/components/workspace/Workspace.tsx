@@ -8,7 +8,7 @@ import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MessageList } from "@/components/chat/MessageList";
 import { HistoryDrawer } from "@/components/history/HistoryDrawer";
 import { ChatSkeleton } from "@/components/layout/Skeletons";
-import { OutputPane } from "@/components/output/OutputPane";
+import { hasOutput, OutputPane } from "@/components/output/OutputPane";
 import { POCard } from "@/components/po/POCard";
 import { useChatStream } from "@/hooks/useChatStream";
 import { useConversationUrl } from "@/hooks/useConversationUrl";
@@ -28,6 +28,8 @@ export function Workspace({ user }: WorkspaceProps) {
   const messages = useChatStore((s) => s.messages);
   const output = useChatStore((s) => s.output);
   const streaming = useChatStore((s) => s.streaming);
+  const turnSteps = useChatStore((s) => s.turnSteps);
+  const outputLive = useChatStore((s) => s.outputLive);
   const title = useChatStore((s) => s.title);
   const conversationId = useChatStore((s) => s.conversationId);
   const editRequests = useChatStore((s) => s.editRequests);
@@ -49,7 +51,9 @@ export function Workspace({ user }: WorkspaceProps) {
   }
 
   const closeHistory = useCallback(() => setHistoryOpen(false), []);
-  const status = streaming ? output.steps.at(-1)?.label : undefined;
+  const status = streaming ? turnSteps.at(-1)?.label : undefined;
+  // The results pane appears only once there is something to put in it.
+  const showResults = loading || hasOutput(output);
   const firstName = user.name.split(" ")[0];
   const run = (query: { id: string; label: string }) =>
     send({ button_id: query.id }, query.label);
@@ -99,10 +103,18 @@ export function Workspace({ user }: WorkspaceProps) {
   );
 
   return (
-    <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-1">
+    <div
+      className={`grid min-h-0 flex-1 ${
+        showResults
+          ? "grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-1"
+          : "grid-cols-1 grid-rows-1"
+      }`}
+    >
       <section
         aria-label="Chat"
-        className="relative flex min-h-0 min-w-0 flex-col border-b border-line bg-canvas lg:border-r lg:border-b-0"
+        className={`relative flex min-h-0 min-w-0 flex-col bg-canvas ${
+          showResults ? "border-b border-line lg:border-r lg:border-b-0" : ""
+        }`}
       >
         <div className="flex items-center justify-between gap-2 border-b border-line bg-panel/60 px-4 py-2.5 backdrop-blur">
           <div className="flex min-w-0 items-center gap-2">
@@ -149,7 +161,8 @@ export function Workspace({ user }: WorkspaceProps) {
             emptyState={emptyState}
           />
         )}
-        <div className="flex flex-col gap-2.5 border-t border-line bg-panel px-4 py-3">
+        <div className="border-t border-line bg-panel px-4 py-3">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-2.5">
           {!loading && messages.length > 0 && <CannedButtons disabled={streaming} onRun={run} />}
           <ChatInput
             disabled={streaming || loading}
@@ -161,6 +174,7 @@ export function Workspace({ user }: WorkspaceProps) {
                 : `Ask a question, ${firstName}…`
             }
           />
+          </div>
         </div>
         {/* Laid over the chat pane (absolute), so nothing above moves when it opens. */}
         <HistoryDrawer
@@ -173,7 +187,15 @@ export function Workspace({ user }: WorkspaceProps) {
           }}
         />
       </section>
-      <OutputPane output={output} running={streaming} loading={loading} poSlot={poSlot} />
+      {showResults && (
+        <OutputPane
+          output={output}
+          running={streaming && outputLive}
+          loading={loading}
+          poSlot={poSlot}
+          title={title}
+        />
+      )}
     </div>
   );
 }

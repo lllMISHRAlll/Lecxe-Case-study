@@ -1,7 +1,7 @@
 """Anthropic (Claude) backend, using the official `anthropic` SDK.
 
 * Fast tier (guardrails, routing, follow-ups, chart choice, PO extraction): Claude Haiku 5.5.
-* Strong tier (schema linking, SQL, answers): Claude Opus 5.5.
+* Strong tier (schema linking, SQL, answers): Claude Sonnet 5.5.
 * Thinking stays on (these models think adaptively by default); depth is set per task with
   `effort`. No sampling parameters: current models reject them.
 * Strong-tier calls on models that support it use the server-side refusal fallback

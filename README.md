@@ -50,7 +50,7 @@ Set `LLM_PROVIDER` in `.env` and restart the backend (`docker compose up -d --fo
 | `LLM_PROVIDER` | Key | Fast tier (guardrails, routing, PO details) | Strong tier (SQL, answers) |
 |---|---|---|---|
 | `openai` (default) | `OPENAI_API_KEY` | `OPENAI_MODEL_FAST`, default `gpt-4o-mini` | `OPENAI_MODEL_SQL`, default `gpt-4o` |
-| `anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL_FAST`, default `claude-haiku-5-5` | `ANTHROPIC_MODEL_STRONG`, default `claude-opus-5-5` |
+| `anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL_FAST`, default `claude-haiku-5-5` | `ANTHROPIC_MODEL_STRONG`, default `claude-sonnet-5-5` |
 
 On Anthropic, strong-tier calls use server-side refusal fallbacks: if Claude declines a request on policy grounds, the API retries it on a fallback model within the same call.
 

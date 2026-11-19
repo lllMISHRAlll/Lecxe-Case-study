@@ -204,7 +204,7 @@ class PONodes:
         try:
             created = self.d.po_repo.create(draft, state["user"])
         except POCreateError as exc:
-            step("insert_po", "Couldn't save the PO")
+            step("insert_po", "Couldn't save the PO", "error")
             return {"reply": f"The PO wasn't saved. {exc}", "reply_mode": "text", "po_draft": draft}
         self.d.history.close_draft(
             state["conversation_id"], "confirmed", created_po_id=created.po_id

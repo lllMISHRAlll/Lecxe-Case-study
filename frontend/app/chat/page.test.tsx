@@ -13,13 +13,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: replace, replace }
 describe("Chat page", () => {
   beforeEach(() => replace.mockClear());
 
-  it("greets the signed-in user and shows both panes", async () => {
+  it("greets the signed-in user and shows the chat, with no results pane until there is a result", async () => {
     mockState.role = "warehouse_manager";
     renderWithProviders(<ChatPage />);
 
     expect(await screen.findByText("Hey Kabir Shah, Warehouse Manager welcome")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Chat" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /results/i })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /results/i })).not.toBeInTheDocument();
   });
 
   it("sends visitors with an expired session to /login", async () => {

@@ -381,3 +381,28 @@ def test_short_price_answer_during_a_draft_stays_in_the_po_flow(make_service):
     card = events_of(second, "po_draft")[0]["draft"]
     assert [ln["unit_price"] for ln in card["lines"]] == ["120.00", "120.00"]
     assert llm.calls_for(Task.SCHEMA_LINK) == []
+
+
+def test_steps_carry_a_status_so_the_ui_can_mark_fixes_and_failures(make_service):
+    service, _, _ = make_service(
+        analytics(**{Task.GENERATE_SQL: ["SELECT nme FROM proc_vendors"], Task.FIX_SQL: [GOOD_SQL]})
+    )
+    steps = events_of(run(service, BO, message="How many POs does each vendor have?"), "step")
+
+    status = {s["node"]: s["status"] for s in steps}
+    assert status["guard_input"] == "done"
+    assert status["schema_link"] == "done"
+    assert [s["status"] for s in steps if s["node"] == "validate_sql"] == ["warn", "done"]
+
+
+def test_a_failed_step_is_marked_as_an_error(make_service):
+    service, _, _ = make_service(base_script())
+    broken = CannedQuery(id="pm_broken2", label="Broken", description="",
+                         roles=frozenset({PM.role}),
+                         sql="SELECT 1 / (COUNT(*) - COUNT(*)) AS x FROM proc_vendors")
+    service.deps.registry.register([broken])
+    try:
+        steps = events_of(run(service, PM, button_id="pm_broken2"), "step")
+    finally:
+        REGISTRY._queries.pop("pm_broken2", None)
+    assert {"node": "execute_sql", "label": "The query failed", "status": "error"} in steps
