@@ -48,6 +48,8 @@ filterwarnings = ["ignore::DeprecationWarning"]
 [tool.coverage.run]
 source = ["app"]
 branch = true
+# Thin adapter over the OpenAI SDK; exercised by the LangSmith evals, not unit tests.
+omit = ["app/llm/openai_llm.py"]
 
 [tool.coverage.report]
 fail_under = 90

@@ -39,12 +39,14 @@ class TestDatabase:
         with psycopg.connect(admin, autocommit=True) as conn:
             conn.execute(f'DROP DATABASE IF EXISTS "{instance.name}" WITH (FORCE)')
             conn.execute(f'CREATE DATABASE "{instance.name}"')
-        with psycopg.connect(instance.url, autocommit=True) as conn:
-            conn.execute("DROP SCHEMA public CASCADE")
-            conn.execute(SCHEMA_SQL.read_text())
-            conn.execute("SELECT pg_catalog.set_config('search_path', 'public', false)")
+        instance.load_schema()
         instance.after_schema()
         return instance
+
+    def load_schema(self) -> None:
+        with psycopg.connect(self.url, autocommit=True) as conn:
+            conn.execute("DROP SCHEMA public CASCADE")
+            conn.execute(SCHEMA_SQL.read_text())
 
     def after_schema(self) -> None:
         """Hook for app-owned schemas (migrations). Extended as the app grows."""

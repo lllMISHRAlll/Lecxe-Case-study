@@ -48,6 +48,12 @@ class CannedQuery:
             values["today"] = ctx.today
         return values
 
+    def literal_sql(self, ctx: CannedContext) -> str:
+        """The query with its parameters written in, e.g. for validation or as an example."""
+        return (self.sql.strip()
+                .replace("CAST(:today AS date)", f"DATE '{ctx.today.isoformat()}'")
+                .replace("CAST(:fx AS numeric)", f"{ctx.fx_usd_inr:g}"))
+
     def note(self, ctx: CannedContext) -> str:
         return f"USD orders are converted at ₹{ctx.fx_usd_inr:g} per USD." if ":fx" in self.sql \
             else ""

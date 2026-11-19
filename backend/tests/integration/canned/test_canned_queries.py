@@ -73,8 +73,9 @@ def test_can_01_02_runs_with_expected_columns_and_rows(db, button_id):
 @pytest.mark.parametrize("button_id", EXPECTED)
 def test_can_03_passes_the_validator_for_its_roles(button_id):
     query = REGISTRY.get(button_id)
+    assert ":" not in query.literal_sql(CTX).replace("::", "")
     for role in query.roles:
-        SqlValidator(row_cap=500).validate(query.sql, role)
+        SqlValidator(row_cap=500).validate(query.literal_sql(CTX), role)
 
 
 @pytest.mark.parametrize("button_id", EXPECTED)

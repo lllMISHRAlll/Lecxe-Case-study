@@ -132,6 +132,9 @@ class SqlValidator:
     def _check_clauses(self, tree: exp.Expression) -> None:
         if tree.find(exp.Into):
             raise SqlRejectedError("clauses", "SELECT INTO is not allowed.")
+        if tree.find(exp.Placeholder) or tree.find(exp.Parameter):
+            raise SqlRejectedError("clauses", "Bind parameters are not allowed. Write literal "
+                                              "values, e.g. DATE '2026-11-19'.")
         if any(s.args.get("locks") for s in tree.find_all(exp.Select)):
             raise SqlRejectedError("clauses",
                                    "Row locking (FOR UPDATE / FOR SHARE) is not allowed.")

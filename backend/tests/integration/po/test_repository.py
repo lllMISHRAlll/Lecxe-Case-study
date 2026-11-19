@@ -186,3 +186,27 @@ def test_usd_po_with_single_tranche(fresh_db):
     assert created.currency == "USD"
     assert q(fresh_db, "select count(*) from proc_po_payment_tranches where po_id = :id",
              id=created.po_id)[0][0] == 1
+
+
+def test_vendor_deactivated_before_confirm_fails_cleanly(fresh_db):
+    draft = make_draft(fresh_db)
+    with fresh_db.write_engine.begin() as conn:
+        conn.execute(text("update proc_vendors set is_active = false where name like 'Zenith%'"))
+    with pytest.raises(POCreateError) as caught:
+        repo(fresh_db).create(draft, PM)
+    assert "Zenith" in str(caught.value)
+
+
+class OtherIntegrityError(PORepository):
+    def insert_lines(self, conn, po_id, draft, now):
+        conn.execute(text("insert into inv_issued_to_targets (id, name, is_active, created_at) "
+                          "select 'dup', name, true, now() from inv_issued_to_targets limit 1"))
+
+
+def test_integrity_errors_unrelated_to_numbers_are_not_retried(fresh_db):
+    from sqlalchemy.exc import IntegrityError
+
+    with pytest.raises(IntegrityError):
+        OtherIntegrityError(fresh_db.write_engine, clock=FixedClock(NOW)).create(
+            make_draft(fresh_db), PM)
+    assert q(fresh_db, "select count(*) from proc_purchase_orders")[0][0] == 7

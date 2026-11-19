@@ -54,6 +54,7 @@ REJECTED = {
     "execute": ("execute s", "only select"),
     "set": ("set role postgres", "only select"),
     "select into": ("select name into new_table from proc_vendors", "into"),
+    "bind parameter": ("select name from proc_vendors where city = :city", "bind parameters"),
     # SQLV-17 row locking
     "for update": ("select name from proc_vendors for update", "lock"),
     "for share": ("select name from proc_vendors for share", "lock"),

@@ -155,3 +155,9 @@ def test_norm_16_existing_unique_index_rejects_duplicate_po_numbers(fresh_raw_db
 def test_apply_all_in_order_matches_the_db_fixture(db):
     units = {r[0] for r in q(db, "select distinct unit from proc_po_lines")}
     assert units <= {"pcs", "kg", "set", "ltr", "mtr"}
+
+
+def test_rollback_without_files_restores_nothing(fresh_raw_db, clock):
+    runner = Runner(fresh_raw_db, changes_dir=None, log_path=None, clock=clock,
+                    target_label="test")
+    assert runner.rollback(change_by_id("001")) == 0

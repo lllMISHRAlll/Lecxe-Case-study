@@ -73,3 +73,18 @@ def test_trailing_semicolon_is_tolerated():
 
 def test_warehouse_manager_can_query_stock():
     validator.validate("select quantity from inv_current_stock", WM)
+
+
+def test_untokenisable_query_is_a_parse_error():
+    import pytest as _pytest
+
+    from app.sql.validator import SqlRejectedError
+
+    with _pytest.raises(SqlRejectedError) as caught:
+        validator.validate("select 'unterminated from proc_vendors", PM)
+    assert caught.value.check == "parse"
+
+
+def test_non_integer_limit_is_replaced_by_the_cap():
+    assert validator.validate("select name from proc_vendors limit 1.5", PM).sql.endswith(
+        "LIMIT 500")

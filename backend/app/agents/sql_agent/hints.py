@@ -9,7 +9,7 @@ from rapidfuzz import fuzz
 
 from app.auth.roles import Role
 from app.po.catalog import Catalog
-from app.sql.canned.base import CannedQuery, Registry
+from app.sql.canned.base import CannedContext, CannedQuery, Registry
 
 MAX_ITEMS = 5
 MAX_EXAMPLES = 3
@@ -44,10 +44,9 @@ def examples(question: str, role: Role, registry: Registry, today: date, fx: flo
 
     picked = sorted(registry.for_role(role), key=score, reverse=True)[:MAX_EXAMPLES]
     blocks = []
+    ctx = CannedContext(today=today, fx_usd_inr=fx)
     for query in picked:
-        sql = query.sql.strip().replace("CAST(:today AS date)", f"DATE '{today.isoformat()}'")
-        sql = sql.replace("CAST(:fx AS numeric)", f"{fx:g}")
-        blocks.append(f"-- {query.label}: {query.description}\n{sql}")
+        blocks.append(f"-- {query.label}: {query.description}\n{query.literal_sql(ctx)}")
     return "\n\n".join(blocks)
 
 

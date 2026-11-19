@@ -75,3 +75,9 @@ def test_grd_07_database_text_is_truncated_and_fenced_as_data():
 
 def test_quote_data_escapes_the_fence_characters():
     assert quote_data("a » b « c", limit=50) == "«a › b ‹ c»"
+
+
+def test_empty_values_stay_empty():
+    assert masker.mask_record({"address": None, "created_by": None, "name": None},
+                              labeler=StaffLabeler()) == {"address": None, "created_by": None,
+                                                          "name": None}

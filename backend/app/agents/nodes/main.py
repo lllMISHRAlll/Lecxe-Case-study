@@ -28,6 +28,9 @@ DENIED = ("Only the Procurement Manager can raise purchase orders. I can still h
 CLARIFY = ("Could you say a bit more about what you'd like to see? For example: open POs, "
            "spend by vendor, or stock at a warehouse.")
 QUERY_FAILED = "Sorry, I couldn't run that query: {error}. Try rephrasing the question."
+ROUTE_LABELS = {"canned": "Using a saved query", "analytics": "Answering from the data",
+                "raise_po": "Working on a purchase order", "chit_chat": "Replying",
+                "clarify": "Need a bit more detail"}
 PO_ACTION_LABELS = {"confirm": "Confirm PO", "cancel": "Cancel PO", "choose": "Chose an option"}
 
 
@@ -77,7 +80,7 @@ class MainNodes:
         action = (state.get("po_action") or {}).get("type")
         decision = self.d.router.route(state["question"], button_id=state.get("button_id"),
                                        po_action=action, has_open_draft=has_draft)
-        step("route_intent", f"Routed to {decision.intent.value.replace('_', ' ')}")
+        step("route_intent", ROUTE_LABELS[decision.intent.value])
         return {"intent": decision.intent.value, "po_command": decision.po_command}
 
     # ------------------------------------------------------------------ query

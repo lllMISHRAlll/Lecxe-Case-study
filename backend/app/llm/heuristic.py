@@ -27,15 +27,22 @@ _KEYWORDS = [
 ]
 _PO = re.compile(r"(?:for\s+)?(?P<qty>\d+(?:\.\d+)?)\s+(?P<item>.+?)\s+from\s+(?P<vendor>.+?)"
                  r"(?:\s+at\s+(?P<price>\d+(?:\.\d+)?))?(?:\s+each)?\s*$", re.I)
+_TERMS = re.compile(r"\b(days?|advance|dispatch|credit|pdc|against)\b", re.I)
 _QTY_PRICE = re.compile(r"(?P<qty>\d+(?:\.\d+)?)\s+(?:at|@)\s+(?P<price>\d+(?:\.\d+)?)", re.I)
+
+
+def _literal(sql: str) -> str:
+    """Generated SQL runs without bind parameters, so inline them."""
+    return sql.replace("CAST(:today AS date)", "CURRENT_DATE").replace("CAST(:fx AS numeric)",
+                                                                       "88")
 
 
 def _sql_for(question: str) -> str:
     q = question.lower()
     for words, button in _KEYWORDS:
         if any(w in q for w in words):
-            return REGISTRY.get(button).sql
-    return REGISTRY.get("pm_open_pos").sql
+            return _literal(REGISTRY.get(button).sql)
+    return _literal(REGISTRY.get("pm_open_pos").sql)
 
 
 class HeuristicLLM:
@@ -63,6 +70,8 @@ class HeuristicLLM:
             if match["price"]:
                 line["unit_price"] = float(match["price"])
             return {"vendor": match["vendor"], "lines": [line]}
+        if _TERMS.search(text):
+            return {"payment_terms": text}
         if match := _QTY_PRICE.search(text):
             return {"lines": [{"action": "update", "quantity": float(match["qty"]),
                                "unit_price": float(match["price"])}]}
