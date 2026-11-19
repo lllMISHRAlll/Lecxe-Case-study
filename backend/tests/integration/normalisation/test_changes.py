@@ -129,10 +129,12 @@ def test_norm_15_null_date_lists_become_empty_lists(runner, fresh_raw_db):
     runner.apply(change_by_id("006"), confirmed=True)
     runner.apply(change_by_id("007"), confirmed=True)
 
-    assert q(fresh_raw_db, "select count(*) from proc_purchase_orders where "
-                           "expected_delivery_date is null or expected_dispatch_date is null")[0][0] == 0
-    assert q(fresh_raw_db, "select expected_delivery_date::text from proc_purchase_orders "
-                           "where po_number = 'PO-2026-0003'")[0][0] == '["2026-08-20", "2026-08-25"]'
+    nulls = q(fresh_raw_db, "select count(*) from proc_purchase_orders where "
+                            "expected_delivery_date is null or expected_dispatch_date is null")
+    assert nulls[0][0] == 0
+    kept = q(fresh_raw_db, "select expected_delivery_date::text from proc_purchase_orders "
+                           "where po_number = 'PO-2026-0003'")
+    assert kept[0][0] == '["2026-08-20", "2026-08-25"]'
 
 
 def test_empty_payment_term_becomes_null(runner, fresh_raw_db):
