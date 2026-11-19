@@ -1,0 +1,1 @@
+UPDATE inv_items AS t SET name = regexp_replace(btrim(t.name), '\s+', ' ', 'g') WHERE (t.name IS DISTINCT FROM regexp_replace(btrim(t.name), '\s+', ' ', 'g')) AND NOT EXISTS (SELECT 1 FROM inv_items AS o WHERE o.id <> t.id AND o.name = regexp_replace(btrim(t.name), '\s+', ' ', 'g'));

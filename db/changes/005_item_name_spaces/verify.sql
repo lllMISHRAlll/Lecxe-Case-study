@@ -1,0 +1,1 @@
+SELECT count(*) FROM inv_items AS t WHERE (t.name IS DISTINCT FROM regexp_replace(btrim(t.name), '\s+', ' ', 'g')) AND NOT EXISTS (SELECT 1 FROM inv_items AS o WHERE o.id <> t.id AND o.name = regexp_replace(btrim(t.name), '\s+', ' ', 'g'));

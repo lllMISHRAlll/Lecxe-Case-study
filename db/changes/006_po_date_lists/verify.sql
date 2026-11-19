@@ -1,0 +1,1 @@
+SELECT count(*) FROM proc_purchase_orders AS t WHERE (t.expected_delivery_date::text IS DISTINCT FROM (COALESCE(t.expected_delivery_date, '[]'::json))::text OR t.expected_dispatch_date::text IS DISTINCT FROM (COALESCE(t.expected_dispatch_date, '[]'::json))::text);
