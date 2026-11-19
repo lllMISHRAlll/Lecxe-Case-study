@@ -114,9 +114,9 @@ class Tracing:
         if self.tracer_factory is not None:
             tracer = self.tracer_factory(metadata)
         else:
-            from langchain_core.tracers.langchain import LangChainTracer
+            from app.observability.trace_shape import ShapedTracer
 
-            tracer = LangChainTracer(project_name=self.settings.langsmith_project,
+            tracer = ShapedTracer(project_name=self.settings.langsmith_project,
                                      client=self.client)
         return {"callbacks": [tracer], "run_id": uuid.UUID(run_id), "run_name": "chat_turn",
                 "tags": tags, "metadata": metadata}

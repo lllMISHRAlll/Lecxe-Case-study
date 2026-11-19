@@ -98,3 +98,30 @@ def test_user_names_are_masked_in_traces():
                                                        "Procurement Manager"}]]}))
     assert "Arjun Rao" not in text
     assert "[USER]" in text
+
+
+def test_obs_08_the_default_tracer_shapes_the_tree():
+    from app.observability.trace_shape import ShapedTracer
+
+    config = Tracing(Settings(**ON)).run_config(PM, "conv-1",
+                                                "11111111-1111-1111-1111-111111111111")
+    assert isinstance(config["callbacks"][0], ShapedTracer)
+
+
+def test_obs_08_model_calls_are_tagged_llm():
+    from unittest.mock import MagicMock
+
+    from langchain_core.language_models.fake_chat_models import FakeListChatModel
+
+    from app.observability.trace_shape import ShapedTracer
+
+    client = MagicMock()
+    tracer = ShapedTracer(client=client, project_name="test")
+    FakeListChatModel(responses=["hi"]).invoke(
+        "hello", config={"callbacks": [tracer], "run_name": "llm.answer"})
+    tracer.wait_for_futures()
+
+    created = client.create_run.call_args_list[0].kwargs
+    assert created["run_type"] == "llm"
+    assert "llm" in created["tags"]
+    assert created["extra"]["metadata"]["kind"] == "llm"

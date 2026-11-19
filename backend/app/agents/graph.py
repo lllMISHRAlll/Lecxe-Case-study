@@ -18,6 +18,7 @@ from app.agents.nodes.main import MAX_ATTEMPTS, MainNodes
 from app.agents.po_flow.graph import build_po_flow
 from app.agents.sql_agent.graph import build_sql_agent
 from app.agents.state import AgentState
+from app.agents.untraced import untraced
 
 
 def _after_guard(state: AgentState) -> str:
@@ -59,19 +60,21 @@ def build_graph(deps: GraphDeps):
 
     graph.add_edge(START, "preprocess")
     graph.add_edge("preprocess", "guard_input")
-    graph.add_conditional_edges("guard_input", _after_guard, ["reply", "rewrite_followup"])
+    graph.add_conditional_edges("guard_input", untraced(_after_guard),
+                                ["reply", "rewrite_followup"])
     graph.add_edge("rewrite_followup", "route_intent")
-    graph.add_conditional_edges("route_intent", _by_intent, [
+    graph.add_conditional_edges("route_intent", untraced(_by_intent), [
         "load_canned_sql", "sql_agent", "check_po_permission", "chat", "ask_clarify"])
     graph.add_edge("load_canned_sql", "execute_sql")
-    graph.add_conditional_edges("sql_agent", _after_sql_agent, ["reply", "execute_sql"])
-    graph.add_conditional_edges("execute_sql", _after_execute,
+    graph.add_conditional_edges("sql_agent", untraced(_after_sql_agent), ["reply", "execute_sql"])
+    graph.add_conditional_edges("execute_sql", untraced(_after_execute),
                                 ["reduce_results", "sql_agent", "reply"])
     graph.add_edge("reduce_results", "choose_chart")
     graph.add_edge("reduce_results", "write_answer")
     graph.add_edge("write_answer", "check_answer")
     graph.add_edge(["choose_chart", "check_answer"], "save_history")
-    graph.add_conditional_edges("check_po_permission", _after_permission, ["reply", "po_flow"])
+    graph.add_conditional_edges("check_po_permission", untraced(_after_permission),
+                                ["reply", "po_flow"])
     graph.add_edge("po_flow", "reply")
     graph.add_edge("chat", "reply")
     graph.add_edge("ask_clarify", "reply")

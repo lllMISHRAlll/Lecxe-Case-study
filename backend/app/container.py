@@ -93,8 +93,8 @@ class Container:
 
         def trace(name, fn):
             return traceable(run_type="llm", name=name, client=client,
-                             process_inputs=scrub, process_outputs=scrub,
-                             metadata={"ls_provider": "anthropic"})(fn)
+                             process_inputs=scrub, process_outputs=scrub, tags=["llm"],
+                             metadata={"ls_provider": "anthropic", "kind": "llm"})(fn)
 
         return trace
 
