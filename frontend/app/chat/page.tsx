@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { AppSkeleton } from "@/components/layout/Skeletons";
 import { Workspace } from "@/components/workspace/Workspace";
 import { ApiError, getMe } from "@/lib/api";
 import { resetChatStore } from "@/stores/chatStore";
@@ -41,11 +42,7 @@ export default function ChatPage() {
   }
 
   if (!me.data) {
-    return (
-      <main className="flex h-dvh items-center justify-center">
-        <p className="text-sm text-muted">Loading…</p>
-      </main>
-    );
+    return <AppSkeleton />;
   }
 
   return (

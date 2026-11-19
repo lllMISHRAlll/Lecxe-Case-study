@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it } from "vitest";
 import { userFor } from "@/tests/msw/fixtures";
 import { server } from "@/tests/msw/server";
@@ -114,5 +114,53 @@ describe("Workspace history and restore", () => {
     expect(log.previousElementSibling).toBe(before);
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows skeletons, not the empty screens, while a reload restores the conversation", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.get("/api/conversations/:id", async () => {
+        await gate;
+        return HttpResponse.json({
+          id: "conv-slow", title: "Overdue check", open_po_draft: null,
+          messages: [
+            { id: "u1", sender: "user", text: "Which deliveries are late?", payload: {}, created_at: null },
+            { id: "a1", sender: "assistant", text: "Two are late.", payload: {}, created_at: null },
+          ],
+        });
+      }),
+    );
+    window.history.replaceState(null, "", "/chat?c=conv-slow");
+    renderWorkspace();
+
+    expect(screen.getByRole("status", { name: "Loading conversation" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Loading results" })).toBeInTheDocument();
+    expect(screen.queryByText(/what would you like to know/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/results appear here/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /message/i })).toBeDisabled();
+
+    release();
+    expect(await screen.findByText("Two are late.")).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "Loading conversation" })).not.toBeInTheDocument();
+  });
+
+  it("shows the skeleton while opening a conversation from history", async () => {
+    server.use(
+      http.get("/api/conversations/:id", async () => {
+        await delay(150);
+        return HttpResponse.json({
+          id: "conv-1", title: "Late deliveries", open_po_draft: null,
+          messages: [{ id: "a1", sender: "assistant", text: "Loaded.", payload: {}, created_at: null }],
+        });
+      }),
+    );
+    const user = renderWorkspace();
+    await user.click(screen.getByRole("button", { name: /history/i }));
+    const [first] = await screen.findAllByRole("button", { name: /open conversation/i });
+    await user.click(first);
+
+    expect(screen.getByRole("status", { name: "Loading conversation" })).toBeInTheDocument();
+    expect(await screen.findByText("Loaded.")).toBeInTheDocument();
   });
 });

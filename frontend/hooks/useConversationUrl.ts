@@ -25,8 +25,11 @@ export function useConversationUrl() {
   const conversationId = useChatStore((s) => s.conversationId);
   const [pendingId, setPendingId] = useState<string | null>(() => readConversationParam());
   const [openError, setOpenError] = useState<string | null>(null);
+  // True while a conversation is being fetched (a reload with ?c=, or opening from history).
+  const [loading, setLoading] = useState<boolean>(() => pendingId !== null);
 
   const open = useCallback(async (id: string) => {
+    setLoading(true);
     try {
       const detail = await getConversation(id);
       useChatStore.getState().loadConversation(detail);
@@ -34,6 +37,8 @@ export function useConversationUrl() {
     } catch {
       useChatStore.getState().newConversation();
       setOpenError("Couldn't open that conversation. Starting a new one.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -50,5 +55,5 @@ export function useConversationUrl() {
     writeConversationParam(conversationId);
   }, [conversationId, pendingId]);
 
-  return { open, openError, dismissError: () => setOpenError(null) };
+  return { open, loading, openError, dismissError: () => setOpenError(null) };
 }

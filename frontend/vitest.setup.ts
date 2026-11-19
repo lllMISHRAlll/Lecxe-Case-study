@@ -43,6 +43,8 @@ beforeAll(() => {
 });
 afterEach(() => {
   cleanup();
+  // The app mirrors the open conversation into ?c=; never let it leak into the next test.
+  if (typeof window !== "undefined") window.history.replaceState(null, "", "/");
   server.resetHandlers();
   mockState.role = "procurement_manager";
   resetChatStore();

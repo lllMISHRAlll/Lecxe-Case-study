@@ -20,6 +20,7 @@
   --color-ok: #1d7a46;
   --color-ok-soft: #e6f4ec;
   --color-scrim: rgb(15 23 31 / 0.38);
+  --color-skeleton: #e3e8ed;
 
   --color-chart-1: #0f6e6a;
   --color-chart-2: #c2410c;
@@ -73,6 +74,7 @@
   --color-ok: #6fd39b;
   --color-ok-soft: #10301f;
   --color-scrim: rgb(0 0 0 / 0.55);
+  --color-skeleton: #232d36;
 
   --color-chart-1: #3cc1b8;
   --color-chart-2: #f08a52;

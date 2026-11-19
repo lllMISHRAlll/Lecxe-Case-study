@@ -7,6 +7,7 @@ import { ChoiceButtons } from "@/components/chat/ChoiceButtons";
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MessageList } from "@/components/chat/MessageList";
 import { HistoryDrawer } from "@/components/history/HistoryDrawer";
+import { ChatSkeleton } from "@/components/layout/Skeletons";
 import { OutputPane } from "@/components/output/OutputPane";
 import { POCard } from "@/components/po/POCard";
 import { useChatStream } from "@/hooks/useChatStream";
@@ -21,7 +22,7 @@ interface WorkspaceProps {
 /** The split screen: chat on the left, streamed results on the right. */
 export function Workspace({ user }: WorkspaceProps) {
   const { send } = useChatStream();
-  const { open, openError, dismissError } = useConversationUrl();
+  const { open, loading, openError, dismissError } = useConversationUrl();
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const messages = useChatStore((s) => s.messages);
@@ -117,7 +118,11 @@ export function Workspace({ user }: WorkspaceProps) {
               </svg>
               History
             </button>
-            <h2 className="truncate text-sm font-semibold">{title ?? "New conversation"}</h2>
+            {loading ? (
+              <div className="h-4 w-40 animate-pulse rounded-md bg-skeleton" />
+            ) : (
+              <h2 className="truncate text-sm font-semibold">{title ?? "New conversation"}</h2>
+            )}
           </div>
           <button
             type="button"
@@ -134,16 +139,20 @@ export function Workspace({ user }: WorkspaceProps) {
         {openError && (
           <p className="border-b border-line bg-warn-soft px-4 py-2 text-xs text-warn">{openError}</p>
         )}
-        <MessageList
-          messages={messages}
-          renderExtras={renderExtras}
-          status={status}
-          emptyState={emptyState}
-        />
+        {loading ? (
+          <ChatSkeleton />
+        ) : (
+          <MessageList
+            messages={messages}
+            renderExtras={renderExtras}
+            status={status}
+            emptyState={emptyState}
+          />
+        )}
         <div className="flex flex-col gap-2.5 border-t border-line bg-panel px-4 py-3">
-          {messages.length > 0 && <CannedButtons disabled={streaming} onRun={run} />}
+          {!loading && messages.length > 0 && <CannedButtons disabled={streaming} onRun={run} />}
           <ChatInput
-            disabled={streaming}
+            disabled={streaming || loading}
             focusSignal={editRequests}
             onSend={(text) => send({ message: text }, text)}
             placeholder={
@@ -164,7 +173,7 @@ export function Workspace({ user }: WorkspaceProps) {
           }}
         />
       </section>
-      <OutputPane output={output} running={streaming} poSlot={poSlot} />
+      <OutputPane output={output} running={streaming} loading={loading} poSlot={poSlot} />
     </div>
   );
 }

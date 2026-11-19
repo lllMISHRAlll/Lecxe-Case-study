@@ -29,7 +29,7 @@ export function ConversationList({ activeId, onOpen, onDeleted }: ConversationLi
     return (
       <ul aria-hidden="true" className="flex flex-col gap-2 p-3">
         {[0, 1, 2].map((i) => (
-          <li key={i} className="h-11 animate-pulse rounded-lg bg-sunken" />
+          <li key={i} className="h-11 animate-pulse rounded-lg bg-skeleton" />
         ))}
       </ul>
     );

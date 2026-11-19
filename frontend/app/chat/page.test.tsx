@@ -44,4 +44,12 @@ describe("Chat page", () => {
     await userEvent.click(await screen.findByRole("button", { name: /log out/i }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
   });
+
+  it("shows the app layout as a skeleton while the session loads", async () => {
+    renderWithProviders(<ChatPage />);
+    expect(screen.getByRole("status", { name: "Loading your workspace" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+    expect(await screen.findByText("Hey Arjun Rao, Procurement Manager welcome")).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "Loading your workspace" })).not.toBeInTheDocument();
+  });
 });
