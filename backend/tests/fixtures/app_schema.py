@@ -1,14 +1,20 @@
-"""Hooks that grow with the app: migrations for the `assistant` schema and normalisation."""
+"""Hooks for app-owned parts of the test database: migrations and normalisation."""
 
 from __future__ import annotations
 
+from sqlalchemy import text
+
 
 def install(url: str) -> None:
-    """Create app-owned schemas in the test database."""
+    """Create the assistant schema with the real migrations."""
+    from app.db.migrate import upgrade
+
+    upgrade(url, sslmode="disable")
 
 
 def truncate(conn) -> None:
-    """Clear app-owned tables between seeds."""
+    conn.execute(text("TRUNCATE assistant.messages, assistant.po_drafts, "
+                      "assistant.conversations CASCADE"))
 
 
 def normalise(db) -> None:
