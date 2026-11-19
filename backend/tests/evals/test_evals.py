@@ -1,4 +1,4 @@
-"""EVAL-01..04 against the real model (opt-in: `pytest -m eval`, needs OPENAI_API_KEY)."""
+"""EVAL-01..04 against the real model (opt-in: `pytest -m eval`; uses LLM_PROVIDER and its key)."""
 
 import pytest
 
@@ -7,8 +7,11 @@ from app.core.config import get_settings
 
 @pytest.fixture(scope="module")
 def results():
-    if not get_settings().openai_api_key.get_secret_value():
-        pytest.skip("OPENAI_API_KEY not set")
+    settings = get_settings()
+    key = (settings.anthropic_api_key if settings.llm_provider == "anthropic"
+           else settings.openai_api_key)
+    if not key.get_secret_value():
+        pytest.skip(f"{settings.llm_provider.upper()}_API_KEY not set")
     from app.db.sessions import Database
     from evals.run import SUITES, make_container
     from scripts.seed_e2e import main as seed

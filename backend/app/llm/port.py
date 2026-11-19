@@ -16,6 +16,10 @@ class LLMOutputError(RuntimeError):
     """The model returned output that could not be parsed, even after a retry."""
 
 
+class LLMRefusalError(RuntimeError):
+    """The model declined the request (stop_reason "refusal")."""
+
+
 class LLM(Protocol):
     def structured(self, task: Task, *, system: str, user: str, schema: type[T]) -> T: ...
 

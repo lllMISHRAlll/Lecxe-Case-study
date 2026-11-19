@@ -2,7 +2,7 @@
 
 A chat assistant over a manufacturer's purchasing and inventory database. People sign in as one of three roles, ask questions in plain English or click suggested questions, and get answers with tables and charts streamed into a split screen. The Procurement Manager can also raise real purchase orders by describing them in chat.
 
-Built with FastAPI, LangGraph, OpenAI and Next.js, test-first. Plan: [PLAN.md](PLAN.md). Every test: [TEST_PLAN.md](TEST_PLAN.md). API: [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
+Built with FastAPI, LangGraph, OpenAI or Anthropic (switchable), and Next.js, test-first. Plan: [PLAN.md](PLAN.md). Every test: [TEST_PLAN.md](TEST_PLAN.md). API: [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
 
 ## Roles
 
@@ -43,7 +43,18 @@ make dev-frontend             # http://localhost:3000
 
 Or run everything in containers with `make up` (http://localhost:3000).
 
-Without `OPENAI_API_KEY` the app uses an offline rule-based stand-in (`FAKE_LLM`), so it still runs end to end for demos and tests.
+### Choosing the AI provider
+
+Set `LLM_PROVIDER` in `.env` and restart the backend (`docker compose up -d --force-recreate backend`, or restart `make dev-backend`):
+
+| `LLM_PROVIDER` | Key | Fast tier (guardrails, routing, PO details) | Strong tier (SQL, answers) |
+|---|---|---|---|
+| `openai` (default) | `OPENAI_API_KEY` | `OPENAI_MODEL_FAST`, default `gpt-4o-mini` | `OPENAI_MODEL_SQL`, default `gpt-4o` |
+| `anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL_FAST`, default `claude-haiku-5-5` | `ANTHROPIC_MODEL_STRONG`, default `claude-opus-5-5` |
+
+On Anthropic, strong-tier calls use server-side refusal fallbacks: if Claude declines a request on policy grounds, the API retries it on a fallback model within the same call.
+
+Without the selected provider's key the app uses an offline rule-based stand-in (`FAKE_LLM`), so it still runs end to end for demos and tests. The backend log warns when that happens.
 
 ## Tests
 

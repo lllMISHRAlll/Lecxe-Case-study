@@ -1,4 +1,5 @@
-"""AI quality evals (EVAL-01..04). Needs OPENAI_API_KEY; uses the local test Postgres.
+"""AI quality evals (EVAL-01..04) with the provider set by LLM_PROVIDER. Uses the local test
+Postgres.
 
     uv run python -m evals.run                 # all suites, scores printed
     uv run python -m evals.run --suite sql     # one suite
@@ -52,8 +53,11 @@ def load(name: str) -> list[dict[str, Any]]:
 
 def make_container(db: Database) -> Container:
     settings = get_settings().model_copy(update={"fake_llm": False, "fx_usd_inr": 88.0})
-    if not settings.openai_api_key.get_secret_value():
-        sys.exit("OPENAI_API_KEY is needed for evals")
+    key = (settings.anthropic_api_key if settings.llm_provider == "anthropic"
+           else settings.openai_api_key)
+    if not key.get_secret_value():
+        sys.exit(f"{settings.llm_provider.upper()}_API_KEY is needed for evals "
+                 f"(LLM_PROVIDER={settings.llm_provider})")
     return Container(settings=settings, clock=FixedClock(TODAY), db=db)
 
 

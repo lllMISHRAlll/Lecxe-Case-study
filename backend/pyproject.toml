@@ -19,6 +19,7 @@ dependencies = [
   "langchain-core>=0.3",
   "langchain-openai>=0.2",
   "langsmith>=0.2",
+  "anthropic>=1.0",
 ]
 
 [dependency-groups]

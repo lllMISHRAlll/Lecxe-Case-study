@@ -43,24 +43,60 @@ class Container:
 
     @cached_property
     def language_model(self) -> LLM:
+        """The LLM selected by LLM_PROVIDER, wrapped with one retry for unusable output."""
         from app.llm.retry import RetryingLLM
 
         if self.llm is not None:
             return RetryingLLM(self.llm)
-        key = self.settings.openai_api_key.get_secret_value()
-        if self.settings.fake_llm or not key:
-            from app.llm.heuristic import HeuristicLLM
+        return RetryingLLM(self._select_llm())
 
-            log.warning("Using the offline heuristic LLM (FAKE_LLM set or no OPENAI_API_KEY)")
-            return RetryingLLM(HeuristicLLM())
+    def _select_llm(self) -> LLM:
+        from app.llm.heuristic import HeuristicLLM
+
+        s = self.settings
+        provider = s.llm_provider
+        key = (s.anthropic_api_key if provider == "anthropic" else s.openai_api_key)
+        key_value = key.get_secret_value()
+        if s.fake_llm:
+            log.warning("FAKE_LLM is set: using the offline heuristic LLM")
+            return HeuristicLLM()
+        if not key_value:
+            log.warning("No %s_API_KEY set for LLM_PROVIDER=%s: using the offline heuristic "
+                        "LLM", provider.upper(), provider)
+            return HeuristicLLM()
+        if provider == "anthropic":
+            from app.llm.anthropic_llm import AnthropicLLM
+
+            if not key_value.startswith("sk-ant-"):
+                log.error("ANTHROPIC_API_KEY doesn't look like an Anthropic key (sk-ant-...). "
+                          "Anthropic will reject it.")
+            return AnthropicLLM(api_key=key_value, fast_model=s.anthropic_model_fast,
+                                strong_model=s.anthropic_model_strong, trace=self._llm_tracer())
         from app.llm.openai_llm import OpenAILLM
 
-        if key.startswith("sk-ant-"):
+        if key_value.startswith("sk-ant-"):
             log.error("OPENAI_API_KEY looks like an Anthropic key (sk-ant-...). OpenAI will "
-                      "reject it: set an OpenAI key (sk-... or sk-proj-...).")
+                      "reject it: set an OpenAI key (sk-... or sk-proj-...), or set "
+                      "LLM_PROVIDER=anthropic and ANTHROPIC_API_KEY.")
+        return OpenAILLM(api_key=key_value, fast_model=s.openai_model_fast,
+                         strong_model=s.openai_model_sql)
 
-        return RetryingLLM(OpenAILLM(api_key=key, fast_model=self.settings.openai_model_fast,
-                                     strong_model=self.settings.openai_model_sql))
+    def _llm_tracer(self):
+        """Wraps SDK calls as LangSmith LLM runs (masked) when tracing is on."""
+        if not self.tracing.enabled:
+            return None
+        from langsmith import traceable
+
+        from app.observability.tracing import scrub
+
+        client = self.tracing.client
+
+        def trace(name, fn):
+            return traceable(run_type="llm", name=name, client=client,
+                             process_inputs=scrub, process_outputs=scrub,
+                             metadata={"ls_provider": "anthropic"})(fn)
+
+        return trace
 
     @cached_property
     def history(self):

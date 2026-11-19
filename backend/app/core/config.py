@@ -27,10 +27,14 @@ class Settings(BaseSettings):
     row_cap: int = 500
     explain_cost_limit: float = 1_000_000.0
 
-    # LLM
+    # LLM: LLM_PROVIDER picks which backend is used; FAKE_LLM forces the offline one.
+    llm_provider: Literal["openai", "anthropic"] = "openai"
     openai_api_key: SecretStr = SecretStr("")
     openai_model_fast: str = "gpt-4o-mini"
     openai_model_sql: str = "gpt-4o"
+    anthropic_api_key: SecretStr = SecretStr("")
+    anthropic_model_fast: str = "claude-haiku-5-5"
+    anthropic_model_strong: str = "claude-opus-5-5"
     fake_llm: bool = False
 
     # Auth
