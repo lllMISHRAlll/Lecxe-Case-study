@@ -40,6 +40,10 @@ Errors always use this shape:
 { "conversation_id": "uuid", "po_action": { "type": "choose", "choice": "option-id" } }
 ```
 
+Exactly one of `message`, `button_id` or `po_action` is allowed, and unknown fields are rejected
+with `422`. Option ids come from the `choices` event and look like `kind:value`, for example
+`vendor:<id>`, `item:<id>` or `payment_terms:30 Days Credit`.
+
 Response: `text/event-stream`. Each event is `event: <type>` then `data: <json>` then a blank line.
 
 | Event | Data | UI |
@@ -87,7 +91,8 @@ Response: `text/event-stream`. Each event is `event: <type>` then `data: <json>`
 ```
 
 `vendor`, `delivery_location` and `expected_delivery_date` may be `null`. Money and quantities
-are strings, to keep decimals exact.
+are strings, to keep decimals exact. The draft also carries `po_number` once it is confirmed.
+Numeric cells in `rows` are JSON numbers or decimal strings; chart `data` values are numbers.
 
 ## History
 

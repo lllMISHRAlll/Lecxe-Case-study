@@ -51,7 +51,7 @@ A chat assistant over the company's Railway Postgres database. Three demo roles 
 
 | Layer | Choice | Why |
 |---|---|---|
-| Backend | Python 3.12, FastAPI, Pydantic v2 | Typed requests, responses and LLM outputs |
+| Backend | Python 3.13, FastAPI, Pydantic v2 | Typed requests, responses and LLM outputs |
 | Agent | LangGraph + LangChain | Graph of nodes with routing, retries, parallel branches |
 | LLM | OpenAI via `langchain-openai` | Two models set in env: a small fast one for guardrails, routing, follow-up rewriting and slot extraction, a stronger one for SQL and answers. Structured outputs bound to Pydantic models |
 | SQL safety | sqlglot, SQLAlchemy 2 + psycopg 3 | Real parsing and AST checks |
@@ -59,7 +59,7 @@ A chat assistant over the company's Railway Postgres database. Three demo roles 
 | Migrations | Alembic for the `assistant` schema. Numbered change scripts for company data | Clear split between app tables and company data changes |
 | Rate limiting | Small in-house fixed-window limiter on the injected clock *(build note: replaces slowapi so limits are testable)* | Caps LLM spend per user |
 | Observability | LangSmith | Section 14 |
-| Frontend | Next.js (App Router) + TypeScript, Tailwind, Zustand, TanStack Query | Server components for the page shell, client components for chat, streaming and charts. Next.js rewrites send `/api/*` to FastAPI, so the auth cookie stays on one origin |
+| Frontend | Next.js 15.5 (App Router) + TypeScript, Tailwind, Zustand, TanStack Query *(build note: 15.5 pinned because 16 renames middleware)* | Server components for the page shell, client components for chat, streaming and charts. Next.js rewrites send `/api/*` to FastAPI, so the auth cookie stays on one origin |
 | Charts | Recharts, in client components | One chart library |
 | Local run and tests | Docker Compose: backend, frontend, test Postgres | One command to run, isolated test DB |
 | Tests | pytest, pytest-asyncio, Vitest + React Testing Library, one Playwright end-to-end test | TDD on both sides. The end-to-end test covers login to streamed answer |
@@ -703,4 +703,13 @@ LANGSMITH_ENDPOINT=               # optional, EU region
 
 **Accepted risk: company system writing old values.** If the company's own app keeps writing old spellings, the data drifts back. The change scripts can be re-run safely, and the AI's data dictionary still describes the values.
 
-**Open questions:** none. Ready for approval.
+**Open questions:** none.
+
+## 18. Build notes
+
+- Phase 1 is built. Backend: 698 tests at 96% coverage (security-critical modules at 100% of branches); frontend: 135 tests at 99.6%; 9 Playwright end-to-end tests.
+- The SQL panel shows the validated query (with its row limit). Generated SQL must use literal values; bind parameters are rejected and sent to the fix step.
+- Payment-terms questions offer the standard terms as buttons (`choices` event).
+- Without an OpenAI key the app runs on an offline rule-based model, used by the end-to-end tests and for demos.
+- AI quality evals live in `backend/evals` (30 SQL questions, 40 routing messages, 20 PO messages, the injection corpus) and run with `make eval`.
+- The `assistant` schema was created in the company DB on 2026-11-19 and logged in `DATA_CHANGES.md`.

@@ -1,0 +1,22 @@
+[
+  {"message": "Raise a PO for 50 kg MS tube 25x40 from Zenith Steels at 120 per kg", "expected": {"vendor": "zenith", "items": ["ms tube"], "quantity": 50, "unit_price": 120}},
+  {"message": "Order 10 relays from Anand Engineering at 450 each", "expected": {"vendor": "anand", "items": ["relay"], "quantity": 10, "unit_price": 450}},
+  {"message": "Create a purchase order with Vanguard for 5 hinge sets", "expected": {"vendor": "vanguard", "items": ["hinge"], "quantity": 5}},
+  {"message": "Need 200 hex nuts M8 from Summit Engineering, price 2.6", "expected": {"vendor": "summit", "items": ["hex nut"], "quantity": 200, "unit_price": 2.6}},
+  {"message": "PO to Global Automation: 2 Mitsubishi PLC FX5U at 410 USD", "expected": {"vendor": "global", "items": ["plc"], "quantity": 2, "unit_price": 410, "currency": "USD"}},
+  {"message": "Buy 20 litres of cutting oil from Vanguard Electricals at 300", "expected": {"vendor": "vanguard", "items": ["cutting oil"], "quantity": 20, "unit_price": 300}},
+  {"message": "100 m copper wire from Zenith at 12 per metre, 30 days credit", "expected": {"vendor": "zenith", "items": ["copper wire"], "quantity": 100, "unit_price": 12, "payment_terms": "30 days credit"}},
+  {"message": "Order MS tube 50 kg and relays 10 from Anand", "expected": {"vendor": "anand", "items": ["ms tube", "relay"]}},
+  {"message": "change the price to 115", "expected": {"action": "update", "unit_price": 115}},
+  {"message": "make it 60 instead", "expected": {"action": "update", "quantity": 60}},
+  {"message": "remove line 2", "expected": {"action": "remove", "line": 2}},
+  {"message": "add 10 hex nuts", "expected": {"items": ["hex nut"], "quantity": 10}},
+  {"message": "50 at 120 each", "expected": {"action": "update", "quantity": 50, "unit_price": 120}},
+  {"message": "Payment terms 50% advance, balance against dispatch", "expected": {"payment_terms": "50% advance"}},
+  {"message": "Deliver to warehouse C-84 by 30 November 2026", "expected": {"delivery_location": "c-84", "expected_delivery_date": "2026-11-30"}},
+  {"message": "Raise a PO for 4 PVC curtains from Summit at 18000 each, 100% advance", "expected": {"vendor": "summit", "items": ["pvc curtain"], "quantity": 4, "unit_price": 18000, "payment_terms": "100% advance"}},
+  {"message": "Order 25 scotch brite belts from Anand at 35", "expected": {"vendor": "anand", "items": ["scotch brite"], "quantity": 25, "unit_price": 35}},
+  {"message": "Get 3 electromagnet solenoids from Vanguard", "expected": {"vendor": "vanguard", "items": ["solenoid"], "quantity": 3}},
+  {"message": "Switch the vendor to Summit Engineering", "expected": {"vendor": "summit"}},
+  {"message": "Set tax to 18% on line 1", "expected": {"action": "update", "line": 1, "tax_percentage": 18}}
+]

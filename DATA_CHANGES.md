@@ -86,3 +86,10 @@ Every change made to company data, newest last.
 - Findings left for a business decision:
   - none
 
+## Assistant schema created
+
+- When: 2026-11-19
+- Target: company DB
+- Change: new schema `assistant` with tables `conversations`, `messages`, `po_drafts` and Alembic's `alembic_version`, for chat history and PO drafts (PLAN.md section 12, option A).
+- Company tables: untouched. `public` still has its 17 tables.
+- Roll back: `cd backend && uv run python -c "from app.db.migrate import downgrade; from app.core.config import get_settings as s; downgrade(s().database_url.get_secret_value(), 'base', sslmode='require')"`, then `DROP SCHEMA assistant CASCADE`.
