@@ -26,3 +26,7 @@ test-results/
 
 # local agent worktrees
 .claude/
+
+# Company data backups stay local (rollback reads them from disk)
+db/changes/*/backup.csv
+db/changes/*/rollback.sql
