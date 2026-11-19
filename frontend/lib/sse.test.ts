@@ -54,6 +54,13 @@ describe("FE-08 SSE parser", () => {
     expect(parser.push("event:token\ndata:abc\n\n")).toEqual([{ event: "token", data: "abc" }]);
   });
 
+  it("treats a field line without a colon as an empty value", () => {
+    const parser = createSSEParser();
+    expect(parser.push("event: token\ndata\ndata: x\n\n")).toEqual([
+      { event: "token", data: "\nx" },
+    ]);
+  });
+
   it("drops an event that has no data", () => {
     const parser = createSSEParser();
     expect(parser.push("event: token\n\n")).toEqual([]);
