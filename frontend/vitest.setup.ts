@@ -11,7 +11,9 @@ class ResizeObserverStub {
   disconnect() {}
 }
 globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
-Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+if (typeof Element !== "undefined") {
+  Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+}
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
