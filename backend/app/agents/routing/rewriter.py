@@ -16,7 +16,7 @@ MAX_TURNS = 3
 
 _FOLLOW_UP = re.compile(
     r"^\s*(and|also|what about|how about|only|now|but|instead|same|then|ok|okay|why|so)\b"
-    r"|\b(it|that|those|these|them|they|their|same|this one|there|above)\b", re.I)
+    r"|\b(it|that one|those|these|them|they|their|same|this one|above)\b", re.I)
 
 REWRITE_SYSTEM = (
     "Rewrite the user's latest message as one standalone question about procurement or "
