@@ -54,17 +54,31 @@ def test_database():
     database.drop()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def raw_db(test_database) -> Iterator:
     """Seed data exactly as the company has it, quirks included. Read-only use."""
     test_database.reset(normalised=False)
     yield test_database.handle()
-    test_database.mark_dirty()
 
 
 @pytest.fixture
 def fresh_raw_db(test_database) -> Iterator:
     """Raw seed reset before and after the test, for tests that write."""
     test_database.reset(normalised=False)
+    yield test_database.handle()
+    test_database.mark_dirty()
+
+
+@pytest.fixture
+def db(test_database) -> Iterator:
+    """Seed data after normalisation, as the real data will look. Read-only use."""
+    test_database.reset(normalised=True)
+    yield test_database.handle()
+
+
+@pytest.fixture
+def fresh_db(test_database) -> Iterator:
+    """Normalised seed, reset before and after the test, for tests that write."""
+    test_database.reset(normalised=True)
     yield test_database.handle()
     test_database.mark_dirty()
