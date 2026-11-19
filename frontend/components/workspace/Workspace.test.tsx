@@ -90,8 +90,9 @@ describe("Workspace streaming", () => {
 
     await ask(user, "Spend by vendor");
 
+    expect(await screen.findByText("Zenith leads spend.")).toBeInTheDocument();
     const output = screen.getByRole("region", { name: /results/i });
-    expect(await within(output).findByText("Ran the query")).toBeInTheDocument();
+    expect(within(output).getByText("Ran the query")).toBeInTheDocument();
     expect(within(output).getByText("Understood the question")).toBeInTheDocument();
     expect(within(output).getByText(/SELECT/)).toBeInTheDocument();
     expect(within(output).getByRole("table")).toBeInTheDocument();
@@ -167,6 +168,7 @@ describe("Workspace streaming", () => {
 
     await user.click(await screen.findByRole("button", { name: "Open POs" }));
     expect(await screen.findByText("Seven open POs.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /message/i })).toBeEnabled());
     await ask(user, "and the oldest?");
 
     await waitFor(() => expect(bodies).toHaveLength(2));
