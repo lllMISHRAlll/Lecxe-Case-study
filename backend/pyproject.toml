@@ -1,0 +1,70 @@
+[project]
+name = "procurement-assistant"
+version = "0.1.0"
+description = "RBAC AI assistant over procurement and inventory data"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "email-validator>=2.2",
+  "sqlalchemy>=2.0.36",
+  "psycopg[binary]>=3.2",
+  "alembic>=1.14",
+  "sqlglot>=25.0",
+  "rapidfuzz>=3.10",
+  "pyjwt>=2.10",
+  "bcrypt>=4.2",
+  "slowapi>=0.1.9",
+  "langgraph>=0.2.60",
+  "langchain-core>=0.3",
+  "langchain-openai>=0.2",
+  "langsmith>=0.2",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "httpx>=0.28",
+  "ruff>=0.8",
+  "mypy>=1.13",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers -m 'not smoke and not eval'"
+markers = [
+  "unit: pure code, no database",
+  "integration: needs the local test database",
+  "api: FastAPI test client",
+  "graph: full LangGraph runs",
+  "security: attack corpora",
+  "arch: import rules",
+  "smoke: read-only checks on the real company database (opt-in)",
+  "eval: real model evals on LangSmith (opt-in)",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = false
+ignore_missing_imports = true
