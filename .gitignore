@@ -23,3 +23,6 @@ test-results/
 
 # os
 .DS_Store
+
+# local agent worktrees
+.claude/
