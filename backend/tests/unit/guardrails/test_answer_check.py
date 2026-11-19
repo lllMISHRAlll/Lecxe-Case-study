@@ -1,0 +1,48 @@
+import pytest
+
+from app.guardrails.answer_check import check_answer_numbers, template_answer
+from app.sql.executor import Column, QueryResult
+
+RESULT = QueryResult(
+    columns=[Column("vendor", "text"), Column("spend_inr", "number"), Column("pos", "number")],
+    rows=[["Zenith Steels", 12900.0, 2], ["Anand Engineering", 3150.0, 2],
+          ["Global Automation", 72160.0, 1]],
+    truncated=False,
+)
+
+
+@pytest.mark.parametrize("answer", [
+    "Global Automation leads with ₹72,160 across 1 PO.",
+    "Zenith Steels spent ₹12,900.00 on 2 POs.",
+    "Total spend is ₹88,210.",
+    "Global Automation is 81.8% of spend.",
+    "Global Automation accounts for about 82% of the total.",
+    "3 vendors have spend.",
+    "Top 3 vendors are shown.",
+    "Zenith spent 12.9 thousand.",
+    "In 2026 Zenith spent ₹12,900.",
+])
+def test_out_02_numbers_from_the_data_pass(answer):
+    assert check_answer_numbers(answer, RESULT).ok, answer
+
+
+@pytest.mark.parametrize("answer", [
+    "Zenith spent ₹15,000.",
+    "There are 42 vendors.",
+    "Global Automation is 55% of spend.",
+])
+def test_out_02_invented_numbers_are_flagged(answer):
+    check = check_answer_numbers(answer, RESULT)
+    assert not check.ok
+    assert check.unknown
+
+
+def test_out_03_template_answer_uses_only_the_data():
+    text = template_answer(RESULT)
+    assert "3 rows" in text
+    assert "Global Automation" in text or "Zenith Steels" in text
+
+
+def test_template_answer_for_empty_result():
+    empty = QueryResult(columns=[Column("vendor", "text")], rows=[], truncated=False)
+    assert "No rows" in template_answer(empty)
