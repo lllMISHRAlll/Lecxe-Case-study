@@ -91,3 +91,10 @@ def test_feedback_is_skipped_when_disabled_or_without_a_run():
 def test_obs_07_tracing_is_forced_off_in_tests():
     assert os.environ["LANGSMITH_TRACING"] == "false"
     assert Tracing(Settings()).enabled is False
+
+
+def test_user_names_are_masked_in_traces():
+    text = json.dumps(scrub({"messages": [[{"content": "talking with Arjun Rao, the "
+                                                       "Procurement Manager"}]]}))
+    assert "Arjun Rao" not in text
+    assert "[USER]" in text

@@ -50,10 +50,11 @@ def test_sse_03_tokens_only_after_rows(chat_client):
 
 
 def test_sse_04_failure_sends_error_with_reference(chat_client):
-    def explode(system, user):
+    def explode(*args, **kwargs):
         raise RuntimeError("boom at db.internal")
 
-    client, _ = chat_client(base_script(**{Task.ANSWER: explode}))
+    client, _ = chat_client(base_script(**ANSWER))
+    client.app.state.container.graph_deps.executor.run = explode
     login(client)
     events = stream(client, button_id="pm_spend_by_vendor")
     error = next(d for e, d in events if e == "error")

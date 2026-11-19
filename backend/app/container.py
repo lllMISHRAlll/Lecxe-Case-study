@@ -55,6 +55,10 @@ class Container:
             return RetryingLLM(HeuristicLLM())
         from app.llm.openai_llm import OpenAILLM
 
+        if key.startswith("sk-ant-"):
+            log.error("OPENAI_API_KEY looks like an Anthropic key (sk-ant-...). OpenAI will "
+                      "reject it: set an OpenAI key (sk-... or sk-proj-...).")
+
         return RetryingLLM(OpenAILLM(api_key=key, fast_model=self.settings.openai_model_fast,
                                      strong_model=self.settings.openai_model_sql))
 

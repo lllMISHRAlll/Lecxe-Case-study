@@ -27,6 +27,8 @@ DENIED = ("Only the Procurement Manager can raise purchase orders. I can still h
           "up POs, vendors and stock.")
 CLARIFY = ("Could you say a bit more about what you'd like to see? For example: open POs, "
            "spend by vendor, or stock at a warehouse.")
+CHAT_FALLBACK = ("Hi! I can answer questions about vendors, purchase orders, payments, receipts "
+                 "and stock. Try one of the suggested questions.")
 QUERY_FAILED = "Sorry, I couldn't run that query: {error}. Try rephrasing the question."
 ROUTE_LABELS = {"canned": "Using a saved query", "analytics": "Answering from the data",
                 "raise_po": "Working on a purchase order", "chit_chat": "Replying",
@@ -142,9 +144,16 @@ class MainNodes:
         user = ANSWER_USER.format(question=state["question"], summary=reduced.to_prompt(),
                                   notes="\n".join(state.get("notes") or []) or "none")
         parts: list[str] = []
-        for token in self.d.llm.stream(Task.ANSWER, system=system, user=user):
-            parts.append(token)
-            emit("token", {"text": token})
+        try:
+            for token in self.d.llm.stream(Task.ANSWER, system=system, user=user):
+                parts.append(token)
+                emit("token", {"text": token})
+        except Exception:
+            # The data is already on screen; answer from it rather than failing the turn.
+            log.warning("Answer writer failed; using the template answer", exc_info=True)
+            fallback = template_answer(state["result"])
+            emit("answer_replace", {"text": fallback})
+            return {"answer": fallback}
         return {"answer": "".join(parts)}
 
     def check_answer(self, state: AgentState) -> dict[str, Any]:
@@ -177,12 +186,18 @@ class MainNodes:
             po_line = ("You can also raise purchase orders by describing them."
                        if has_capability(user.role, Capability.PO_CREATE) else "")
             parts = []
-            for token in self.d.llm.stream(
-                    Task.CHAT_REPLY, user=state["question"],
-                    system=CHAT_SYSTEM.format(name=user.name, role=user.role.label,
-                                              po_line=po_line, buttons=buttons)):
-                parts.append(token)
-                emit("token", {"text": token})
+            try:
+                for token in self.d.llm.stream(
+                        Task.CHAT_REPLY, user=state["question"],
+                        system=CHAT_SYSTEM.format(name=user.name, role=user.role.label,
+                                                  po_line=po_line, buttons=buttons)):
+                    parts.append(token)
+                    emit("token", {"text": token})
+            except Exception:
+                log.warning("Small-talk reply failed; using the fixed reply", exc_info=True)
+                if not parts:
+                    stream_text(CHAT_FALLBACK)
+                    return {"reply": CHAT_FALLBACK}
             return {"reply": "".join(parts)}
         stream_text(state.get("reply") or "")
         return {}

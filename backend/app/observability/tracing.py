@@ -20,7 +20,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.agents.prompts import PROMPT_VERSION
-from app.auth.users import User
+from app.auth.users import DEMO_USERS, User
 from app.core.config import Settings
 from app.guardrails.masker import Masker
 from app.sql.executor import QueryResult
@@ -35,8 +35,12 @@ def hash_user(user_id: str) -> str:
     return hashlib.sha256(user_id.encode()).hexdigest()[:12]
 
 
+_USER_NAMES = re.compile("|".join(re.escape(u.name) for u in DEMO_USERS))
+
+
 def _clean_text(text: str) -> str:
-    return _masker.mask(_ROWS_BLOCK.sub("[rows removed]\n", text))
+    text = _USER_NAMES.sub("[USER]", _ROWS_BLOCK.sub("[rows removed]\n", text))
+    return _masker.mask(text)
 
 
 def _user(value: Any) -> Any:

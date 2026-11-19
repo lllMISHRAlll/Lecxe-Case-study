@@ -97,8 +97,6 @@ class IntentRouter:
             return self._llm.structured(Task.ROUTE, system=ROUTE_SYSTEM, user=text,
                                         schema=RouteClassification)
         except LLMOutputError:
+            # Unusable output is our problem to absorb; a failing AI service is not hidden.
             log.warning("Router output unusable twice; falling back")
-            return None
-        except Exception:
-            log.warning("Router classifier failed; falling back", exc_info=True)
             return None

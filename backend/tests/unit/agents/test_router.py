@@ -91,10 +91,10 @@ def test_classifier_prompt_contains_the_message():
     assert "Which vendors are overdue?" in llm.calls[0].user
 
 
-def test_classifier_crash_falls_back_to_the_open_draft():
+def test_ai_service_failures_are_not_hidden_behind_a_clarifying_question():
     def broken(system, user):
         raise ConnectionError("network down")
 
     llm = ScriptedLLM({Task.ROUTE: broken})
-    assert IntentRouter(llm).route("50 at 120", has_open_draft=True).intent is Intent.RAISE_PO
-    assert IntentRouter(llm).route("stock stuff").intent is Intent.CLARIFY
+    with pytest.raises(ConnectionError):
+        IntentRouter(llm).route("stock stuff")

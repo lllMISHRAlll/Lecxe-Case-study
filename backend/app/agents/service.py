@@ -18,6 +18,21 @@ from app.history.repository import Conversation
 
 log = logging.getLogger(__name__)
 
+GENERIC_ERROR = "Something went wrong while answering. Please try again."
+AI_UNAVAILABLE = ("The AI service isn't available right now (it rejected the request), so I "
+                  "can't answer typed questions. The suggested questions still work.")
+_AI_ERRORS = {"AuthenticationError", "OpenAIAuthenticationError", "PermissionDeniedError",
+              "APIConnectionError", "APITimeoutError", "RateLimitError"}
+
+
+def _ai_unavailable(exc: BaseException | None) -> bool:
+    seen = 0
+    while exc is not None and seen < 10:
+        if type(exc).__name__ in _AI_ERRORS:
+            return True
+        exc, seen = exc.__cause__ or exc.__context__, seen + 1
+    return False
+
 
 class POAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -104,11 +119,12 @@ class ChatService:
                 yield event
         except GeneratorExit:
             raise
-        except Exception:
+        except Exception as exc:
             reference = uuid.uuid4().hex[:8]
-            log.exception("Chat turn failed, reference %s", reference)
-            yield StreamEvent("error", {"message": "Something went wrong while answering. "
-                                                   "Please try again.", "reference": reference})
+            log.exception("Chat turn failed, reference %s, LangSmith run id %s", reference,
+                          run_id or "none (tracing off)")
+            message = AI_UNAVAILABLE if _ai_unavailable(exc) else GENERIC_ERROR
+            yield StreamEvent("error", {"message": message, "reference": reference})
         yield StreamEvent("done", {"message_id": message_id})
 
     def stream(self, user: User, request: ChatRequest) -> Iterator[StreamEvent]:

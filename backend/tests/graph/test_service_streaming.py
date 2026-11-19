@@ -46,12 +46,63 @@ def test_request_needs_exactly_one_kind_of_input():
 
 
 def test_unexpected_error_becomes_an_error_event(make_service):
-    def explode(system, user):
+    def explode(*args, **kwargs):
         raise RuntimeError("secret internal detail")
 
-    service, _, _ = make_service(base_script(**{Task.ANSWER: explode}))
+    service, _, _ = make_service(base_script(**{Task.ANSWER: lambda s, u: "x"}))
+    service.deps.executor.run = explode
     events = run(service, PM, button_id="pm_spend_by_vendor")
     errors = [e.data for e in events if e.event == "error"]
     assert errors and len(errors[0]["reference"]) == 8
     assert "secret internal detail" not in str(errors)
     assert events[-1].event == "done"
+
+
+class AuthenticationError(Exception):
+    """Same name as the OpenAI SDK's error, without importing the SDK."""
+
+
+def test_answer_failure_falls_back_to_the_data_answer(make_service):
+    def down(system, user):
+        raise AuthenticationError("Incorrect API key provided")
+
+    service, _, _ = make_service(base_script(**{Task.ANSWER: down}))
+    events = run(service, PM, button_id="pm_spend_by_vendor")
+    kinds = [e.event for e in events]
+    assert "error" not in kinds
+    replaced = [e.data["text"] for e in events if e.event == "answer_replace"]
+    assert replaced and "5 rows" in replaced[0]
+
+
+def test_small_talk_failure_falls_back_to_a_fixed_reply(make_service):
+    def down(system, user):
+        raise AuthenticationError("Incorrect API key provided")
+
+    service, _, _ = make_service(base_script(**{Task.CHAT_REPLY: down}))
+    events = run(service, PM, message="hi")
+    assert "error" not in [e.event for e in events]
+    reply = "".join(e.data["text"] for e in events if e.event == "token")
+    assert "suggested questions" in reply
+
+
+def test_ai_key_rejection_gets_a_clear_message(make_service):
+    def down(system, user):
+        raise AuthenticationError("Incorrect API key provided")
+
+    service, _, _ = make_service(base_script(**{
+        Task.ROUTE: lambda s, u: {"intent": "analytics", "confidence": 0.9, "reason": ""},
+        Task.SCHEMA_LINK: down}))
+    events = run(service, PM, message="Which vendors are overdue on deliveries?")
+    error = next(e.data for e in events if e.event == "error")
+    assert "AI service" in error["message"]
+    assert "suggested questions" in error["message"]
+
+
+def test_typed_question_with_the_ai_down_says_so(make_service):
+    def down(system, user):
+        raise AuthenticationError("Incorrect API key provided")
+
+    service, _, _ = make_service(base_script(**{Task.ROUTE: down}))
+    events = run(service, PM, message="Which vendors are overdue on deliveries?")
+    error = next(e.data for e in events if e.event == "error")
+    assert "AI service" in error["message"]
