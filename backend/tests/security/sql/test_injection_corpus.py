@@ -69,7 +69,8 @@ REJECTED = {
     "table star": ("select v.* from proc_vendors v", "select *"),
     # SQLV-23 junk
     "empty": ("   ", "empty"),
-    "not sql": ("show me the money", "parse"),
+    "not sql": ("how much did we spend last month?", "parse"),
+    "show command": ("show me the money", "only select"),
     "too long": ("select name from proc_vendors where name = '" + "a" * 10_001 + "'",
                  "too long"),
 }
