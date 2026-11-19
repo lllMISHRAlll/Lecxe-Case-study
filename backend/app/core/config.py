@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr = SecretStr("dev-only-change-me-0123456789abcdef")
     jwt_ttl_hours: int = 8
     cookie_name: str = "pa_session"
+    demo_login_password: SecretStr | None = None  # shown on quick-login buttons outside prod
 
     # Business rules
     fx_usd_inr: float = Field(default=88.0, gt=0)
