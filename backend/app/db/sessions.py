@@ -7,7 +7,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from sqlalchemy import Engine, create_engine
 
@@ -28,17 +29,21 @@ def read_options(statement_timeout_ms: int) -> str:
 class Database:
     read_engine: Engine
     write_engine: Engine
+    read_connect_args: dict[str, Any] = field(default_factory=dict)
+    write_connect_args: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def connect(cls, url: str, *, sslmode: str, statement_timeout_ms: int) -> Database:
-        common = {"sslmode": sslmode, "connect_timeout": 10}
-        read = create_engine(
-            sqlalchemy_url(url),
-            pool_pre_ping=True,
-            connect_args={**common, "options": read_options(statement_timeout_ms)},
+        write_args: dict[str, Any] = {"sslmode": sslmode, "connect_timeout": 10}
+        read_args = {**write_args, "options": read_options(statement_timeout_ms)}
+        return cls(
+            read_engine=create_engine(sqlalchemy_url(url), pool_pre_ping=True,
+                                      connect_args=read_args),
+            write_engine=create_engine(sqlalchemy_url(url), pool_pre_ping=True,
+                                       connect_args=write_args),
+            read_connect_args=read_args,
+            write_connect_args=write_args,
         )
-        write = create_engine(sqlalchemy_url(url), pool_pre_ping=True, connect_args=common)
-        return cls(read_engine=read, write_engine=write)
 
     def dispose(self) -> None:
         self.read_engine.dispose()
