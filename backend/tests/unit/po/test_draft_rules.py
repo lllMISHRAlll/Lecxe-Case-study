@@ -125,3 +125,25 @@ def test_contract_shape_uses_strings_for_money():
     assert out["vendor"] == {"id": "v-anand", "name": "Anand Engineering Pvt. Ltd."}
     assert out["missing"] == []
     assert out["placed_on"] == "2026-11-19"
+
+
+def test_one_question_lists_every_line_missing_the_same_detail():
+    d = apply_defaults(draft(vendor=vendor("v-anand"), lines=[
+        POLine(position=1, item=item("RM-MT-0001")), POLine(position=2, item=item("BO-EL-0001")),
+        POLine(position=3, item=item("BO-MC-0002"), quantity=Decimal(1))]), TODAY)
+    question = next_question(review(d))
+    assert question.slot == "quantity"
+    assert question.line is None
+    assert "1. MS Tube – 25×40×2mm (kg)" in question.text
+    assert "2. Relay – 240V, 2 Pole (pcs)" in question.text
+    assert "Hinge Set" not in question.text
+    assert "all 10 pcs" in question.text  # shows how to answer in bulk
+
+
+def test_prices_are_asked_together_too():
+    d = apply_defaults(draft(vendor=vendor("v-anand"), lines=[
+        POLine(position=1, item=item("RM-MT-0001"), quantity=Decimal(5)),
+        POLine(position=2, item=item("BO-EL-0001"), quantity=Decimal(5))]), TODAY)
+    question = next_question(review(d))
+    assert question.slot == "unit_price"
+    assert "1. MS Tube" in question.text and "2. Relay" in question.text

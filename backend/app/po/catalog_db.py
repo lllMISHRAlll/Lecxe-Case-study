@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy import Engine, text
 
-from app.po.catalog import PriceRecord, best_price
+from app.po.catalog import PriceRecord, best_price, recent_vendors
 from app.po.models import ItemRef, LocationRef, VendorRef
 
 
@@ -44,3 +44,6 @@ class DbCatalog:
 
     def last_price(self, item_id: str, vendor_id: str | None, currency: str) -> Decimal | None:
         return best_price(self.prices, item_id, vendor_id, currency)
+
+    def recent_vendors(self, limit: int) -> list[VendorRef]:
+        return recent_vendors(self.vendors, self.prices, limit)

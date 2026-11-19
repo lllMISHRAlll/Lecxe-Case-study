@@ -60,6 +60,7 @@ class PODraft(BaseModel):
     created_po_number: str | None = None
     created_po_id: str | None = None
     pending: dict[str, Any] | None = None  # choice waiting for the user, e.g. which vendor
+    last_question: str | None = None  # what the assistant asked last, for the extractor
 
     def to_contract(self, review: Review) -> dict[str, Any]:
         from app.po.totals import draft_totals, line_totals

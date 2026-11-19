@@ -78,3 +78,12 @@ def test_template_answer_skips_blank_values():
     text = template_answer(SCORECARD)
     assert "None" not in text
     assert "Sterling Steels" in text and "5 rows" in text
+
+
+def test_shown_and_remaining_row_counts_are_allowed_when_given_as_context():
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    rows = [["Vendor " + letters[i % 26] * (1 + i // 26)] for i in range(34)]  # no digits
+    result = QueryResult(columns=[Column("vendor", "text")], rows=rows, truncated=False)
+    answer = "There are 34 vendors. The first 20 are listed; the other 14 are in the table."
+    assert not check_answer_numbers(answer, result).ok
+    assert check_answer_numbers(answer, result, context="shown 20 remaining 14").ok

@@ -32,6 +32,8 @@ class Catalog(Protocol):
     def last_price(self, item_id: str, vendor_id: str | None, currency: str) -> Decimal | None:
         ...
 
+    def recent_vendors(self, limit: int) -> list[VendorRef]: ...
+
 
 @dataclass
 class InMemoryCatalog:
@@ -42,6 +44,22 @@ class InMemoryCatalog:
 
     def last_price(self, item_id: str, vendor_id: str | None, currency: str) -> Decimal | None:
         return best_price(self.prices, item_id, vendor_id, currency)
+
+    def recent_vendors(self, limit: int) -> list[VendorRef]:
+        return recent_vendors(self.vendors, self.prices, limit)
+
+
+def recent_vendors(vendors: list[VendorRef], prices: list[PriceRecord],
+                   limit: int) -> list[VendorRef]:
+    """Active vendors, most recently ordered from first, then the rest by name."""
+    active = {v.id: v for v in vendors if v.is_active}
+    ordered: list[VendorRef] = []
+    for price in sorted(prices, key=lambda p: p.placed_on, reverse=True):
+        vendor = active.get(price.vendor_id)
+        if vendor and vendor not in ordered:
+            ordered.append(vendor)
+    ordered += [v for v in sorted(active.values(), key=lambda v: v.name) if v not in ordered]
+    return ordered[:limit]
 
 
 def best_price(prices: list[PriceRecord], item_id: str, vendor_id: str | None,

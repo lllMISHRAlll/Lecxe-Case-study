@@ -130,6 +130,10 @@ def next_question(rev: Review) -> Question | None:
         return Question("payment_terms",
                         f"Which payment terms apply? {vendor} has no usual terms on record.",
                         options=[Option(term, term) for term in CANONICAL_TERMS])
+    same = [ln for ln in draft.lines
+            if ln.item and (slot, ln.position) in rev.missing_slots]
+    if len(same) > 1:
+        return _grouped_question(slot, same, draft.currency)
     unit = line.unit or line.item.unit
     if slot == "quantity":
         return Question(slot, f"How many {unit} of {line.item.name}?", line=position)
@@ -139,3 +143,20 @@ def next_question(rev: Review) -> Question | None:
         hint = f" The last price paid was {symbol}{line.suggested_price:f}."
     return Question("unit_price", f"What's the price per {unit} for {line.item.name}?{hint}",
                     line=position)
+
+
+def _grouped_question(slot: str, lines: list, currency: str) -> Question:
+    symbol = "₹" if currency == "INR" else "$"
+    listed = []
+    for ln in lines:
+        unit = ln.unit or ln.item.unit
+        hint = (f", last paid {symbol}{ln.suggested_price:f}"
+                if slot == "unit_price" and ln.suggested_price is not None else "")
+        listed.append(f"{ln.position}. {ln.item.name} ({unit}{hint})")
+    if slot == "quantity":
+        lead = f"How many of each? {len(lines)} items still need a quantity:"
+        how = "Reply for all at once, e.g. 'all 10 pcs and 2 kg', or per line, e.g. 'line 1: 5'."
+    else:
+        lead = f"What's the price per unit for each? {len(lines)} items still need a price:"
+        how = "Reply per line, e.g. 'line 1: 450, line 2: 85', or 'all at 120'."
+    return Question(slot, "\n".join([lead, *listed, how]))

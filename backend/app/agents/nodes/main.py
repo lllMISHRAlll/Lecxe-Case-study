@@ -164,7 +164,10 @@ class MainNodes:
     def check_answer(self, state: AgentState) -> dict[str, Any]:
         result = state["result"]
         assert result is not None
-        context = " ".join([state["question"], *(state.get("notes") or [])])
+        reduced = state.get("reduced")
+        shown = len(reduced.top_rows) if reduced else result.row_count
+        context = " ".join([state["question"], *(state.get("notes") or []),
+                            f"shown {shown} remaining {result.row_count - shown}"])
         check = check_answer_numbers(state.get("answer", ""), result, context)
         if check.ok:
             return {}

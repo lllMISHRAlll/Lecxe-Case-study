@@ -8,6 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
+from app.domain.vocabulary import canonical_unit
 from app.po.catalog import Catalog
 from app.po.models import PODraft, POLine
 from app.po.resolver import EntityResolver
@@ -17,6 +18,11 @@ from app.po.rules import Option
 class ExtractedLine(BaseModel):
     action: Literal["add", "update", "remove"] = "add"
     line: int | None = Field(default=None, description="Line number for update or remove")
+    apply_to: Literal["line", "all"] = Field(
+        default="line", description="'all' updates every existing line (optionally only those "
+                                    "in for_unit)")
+    for_unit: str | None = Field(default=None, description="With apply_to='all': only lines in "
+                                                           "this unit, e.g. pcs or kg")
     item: str | None = Field(default=None, description="Item code or name as the user wrote it")
     quantity: float | None = None
     unit: str | None = None
@@ -106,6 +112,13 @@ def merge_extraction(draft: PODraft, extraction: SlotExtraction,
                 d.lines.remove(target)
                 _renumber(d)
             continue
+        if extracted.action == "update" and extracted.apply_to == "all":
+            wanted = canonical_unit(extracted.for_unit) if extracted.for_unit else None
+            for line in d.lines:
+                unit = line.unit or (line.item.unit if line.item else None)
+                if wanted is None or unit == wanted:
+                    _set_fields(line, extracted.model_copy(update={"unit": None}), unresolved)
+            continue
         if extracted.action == "update":
             target = _target(d, extracted.line)
             if target is None:
@@ -124,6 +137,12 @@ def merge_extraction(draft: PODraft, extraction: SlotExtraction,
                     Option(i.id, f"{i.name} ({i.code})") for i in found_item.choices],
                 pending={k: str(v) for k, v in extracted.model_dump(
                     include={"quantity", "unit", "unit_price"}).items() if v is not None}))
+            continue
+        existing = next((ln for ln in d.lines if ln.item and ln.item.id == found_item.match.id),
+                        None)
+        if existing is not None:
+            # The item is already on the draft: fill that line rather than adding it twice.
+            _set_fields(existing, extracted, unresolved)
             continue
         line = POLine(position=len(d.lines) + 1, item=found_item.match)
         _set_fields(line, extracted, unresolved)
