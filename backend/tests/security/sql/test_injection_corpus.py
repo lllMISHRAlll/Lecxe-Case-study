@@ -35,7 +35,7 @@ REJECTED = {
     "pg_sleep": ("select pg_sleep(10)", "pg_sleep"),
     "pg_read_file": ("select pg_read_file('/etc/passwd')", "pg_read_file"),
     "lo_import": ("select lo_import('/etc/passwd')", "lo_import"),
-    "dblink": ("select * from dblink('host=x', 'select 1') as t(a int)", "dblink"),
+    "dblink": ("select t.a from dblink('host=x', 'select 1') as t(a int)", "dblink"),
     "set_config": ("select set_config('default_transaction_read_only', 'off', false)",
                    "set_config"),
     "current_setting": ("select current_setting('server_version')", "current_setting"),
