@@ -20,10 +20,15 @@ from app.llm.tasks import Task
 
 log = logging.getLogger(__name__)
 
-Category = Literal["ok", "prompt_injection", "raw_sql", "markup", "off_topic", "abuse"]
+Category = Literal["ok", "prompt_injection", "raw_sql", "markup", "destructive", "off_topic",
+                   "abuse"]
 
 _I = re.I | re.S
 _RULES: list[tuple[Category, re.Pattern[str]]] = [
+    ("destructive", re.compile(
+        r"\b(delete|drop|truncate|wipe|erase|remove|destroy|clear|purge)\b.{0,25}"
+        r"\b(all|every|entire|whole|the)\b.{0,25}"
+        r"\b(tables?|database|db|data|records|rows|schemas?)\b", _I)),
     ("prompt_injection", re.compile(
         r"\b(ignore|disregard|forget)\b.{0,30}\b(previous|prior|above|earlier|all|your|the)\b"
         r".{0,20}\b(instructions?|rules|prompts?|directions|guidelines)\b", _I)),

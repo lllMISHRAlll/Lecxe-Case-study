@@ -217,3 +217,11 @@ def test_invented_numbers_are_replaced(make_service):
     events = run(service, PM, button_id="pm_spend_by_vendor")
     replaced = events_of(events, "answer_replace")
     assert replaced and "5 rows" in replaced[0]["text"]
+
+
+def test_destructive_request_gets_a_read_only_reply_without_any_llm_call(make_service):
+    service, llm, _ = make_service(base_script())
+    events = run(service, BO, message="delete all the tables in the db")
+    reply = "".join(t["text"] for t in events_of(events, "token"))
+    assert "read" in reply and "can't change or delete" in reply
+    assert llm.calls == []

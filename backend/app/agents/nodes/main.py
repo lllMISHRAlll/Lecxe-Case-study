@@ -23,6 +23,8 @@ MAX_ATTEMPTS = 3
 
 BLOCKED = ("Sorry, I can't help with that. I can answer questions about vendors, purchase "
            "orders, payments, receipts and stock.")
+READ_ONLY = ("I can only read data here, so I can't change or delete anything in the database. "
+             "Ask me about vendors, purchase orders, payments or stock instead.")
 DENIED = ("Only the Procurement Manager can raise purchase orders. I can still help you look "
           "up POs, vendors and stock.")
 CLARIFY = ("Could you say a bit more about what you'd like to see? For example: open POs, "
@@ -67,7 +69,8 @@ class MainNodes:
             if not verdict.allowed:
                 log.info("Blocked message: %s", verdict.category)
                 step("guard_input", "Message blocked")
-                return {"reply": BLOCKED, "reply_mode": "text"}
+                reply = READ_ONLY if verdict.category in ("destructive", "raw_sql") else BLOCKED
+                return {"reply": reply, "reply_mode": "text"}
         step("guard_input", "Safety checks passed")
         return {}
 
