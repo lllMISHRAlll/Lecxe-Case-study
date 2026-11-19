@@ -121,7 +121,7 @@ def test_blocking_payments_compute_amount_from_percentage(db):
 def test_vendor_scorecard_on_time(db):
     rows = {r["vendor"]: r for r in run(db, "bo_vendor_scorecard").records()}
     assert rows["Zenith Steels Pvt. Ltd."]["on_time_pct"] == Decimal("100.0")
-    assert rows["Anand Engineering Pvt. Ltd."]["on_time_pct"] == Decimal("50.0")
+    assert rows["Anand Engineering Pvt. Ltd."]["on_time_pct"] == Decimal("33.3")  # 1 of 3
 
 
 def test_stock_by_warehouse_counts(db):
