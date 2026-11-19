@@ -116,9 +116,10 @@ def test_viz_05_chart_data_is_exactly_the_rows():
 
 
 def test_line_chart_dates_are_iso_strings():
-    data = result([("week", "date"), ("qty", "number")], [(date(2026, 8, 3), 1)])
+    data = result([("week", "date"), ("qty", "number")],
+                  [(date(2026, 8, 3), 1), (date(2026, 8, 10), 2)])
     spec = build_chart(data, decider.decide(data, ""), title="t")
-    assert spec["data"] == [{"week": "2026-08-03", "qty": 1.0}]
+    assert spec["data"] == [{"week": "2026-08-03", "qty": 1.0}, {"week": "2026-08-10", "qty": 2.0}]
 
 
 def test_table_spec_has_no_data():
