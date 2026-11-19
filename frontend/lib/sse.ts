@@ -65,7 +65,8 @@ export function createSSEParser(): SSEParser {
       buffer += chunk;
       const out: RawSSE[] = [];
       const lines = buffer.split(/\r\n|\n|\r/);
-      buffer = lines.pop() ?? "";
+      // split() always returns at least one element: the unfinished tail.
+      buffer = lines.pop() as string;
       for (const line of lines) handleLine(line, out);
       return out;
     },

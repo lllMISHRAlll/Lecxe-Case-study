@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { PODraft } from "@/lib/types";
 
 interface POCardProps {
@@ -35,14 +35,13 @@ const notSet = <span className="font-normal text-muted">Not set</span>;
 
 /** Confirmation card for a PO draft. Remount it (via `key`) for each new draft. */
 export function POCard({ draft, busy, onConfirm, onCancel, onEdit }: POCardProps) {
+  // Clicks are discrete events, so React re-renders (disabling the button) before the next
+  // click is handled. That makes a double click send exactly one confirm.
   const [confirming, setConfirming] = useState(false);
-  const confirmedRef = useRef(false);
   const status = STATUS_STYLE[draft.status];
   const canConfirm = draft.missing.length === 0 && draft.lines.length > 0;
 
   function confirm() {
-    if (confirmedRef.current) return;
-    confirmedRef.current = true;
     setConfirming(true);
     onConfirm(draft.idempotency_key);
   }
