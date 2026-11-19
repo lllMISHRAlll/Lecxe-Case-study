@@ -192,6 +192,6 @@ class MainNodes:
         payload = dict(state.get("payload") or {})
         payload["steps"] = state.get("steps") or []
         message_id = self.d.history.add_message(state["conversation_id"], "assistant", text,
-                                                payload=payload)
+                                                payload=payload, run_id=state.get("run_id"))
         emit("saved", {"message_id": message_id})
         return {}

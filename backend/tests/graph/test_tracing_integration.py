@@ -21,7 +21,7 @@ class RecordingTracer(BaseTracer):
 
 
 def test_traced_turn_records_nodes_and_stores_the_run_id(make_service, fresh_db):
-    service, _, container = make_service(base_script(**{Task.ANSWER: lambda s, u: "Five."}))
+    service, _, _ = make_service(base_script(**{Task.ANSWER: lambda s, u: "Five."}))
     recorder = RecordingTracer()
     service.tracing.enabled = True
     service.tracing.tracer_factory = lambda run_config: recorder

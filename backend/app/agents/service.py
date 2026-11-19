@@ -55,6 +55,10 @@ class ChatService:
         self.deps = deps
         self._graph = build_graph(deps)
 
+    @property
+    def tracing(self):
+        return self.deps.tracing
+
     @classmethod
     def from_container(cls, container: Any) -> ChatService:
         return cls(container.graph_deps)
@@ -87,10 +91,13 @@ class ChatService:
             "po_action": request.po_action.model_dump() if request.po_action else None,
             "history": recent, "steps": [], "payload": {},
         }
+        run_id = str(uuid.uuid4()) if self.tracing.enabled else None
+        state["run_id"] = run_id
+        config = self.tracing.run_config(turn.user, conversation.id, run_id)
         message_id = None
         try:
-            for _namespace, event in self._graph.stream(state, stream_mode="custom",
-                                                        subgraphs=True):
+            for _namespace, event in self._graph.stream(state, config=config or None,
+                                                        stream_mode="custom", subgraphs=True):
                 if event.event == "saved":
                     message_id = event.data["message_id"]
                     continue

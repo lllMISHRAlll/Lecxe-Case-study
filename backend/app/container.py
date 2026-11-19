@@ -87,10 +87,17 @@ class Container:
             explainer=SqlExplainer(db.read_engine, cost_limit=s.explain_cost_limit),
             charts=ChartDecider(llm), history=self.history,
             po_repo=PORepository(db.write_engine, clock=self.clock),
-            load_catalog=lambda: DbCatalog.load(db.read_engine))
+            load_catalog=lambda: DbCatalog.load(db.read_engine), tracing=self.tracing)
+
+    @cached_property
+    def tracing(self):
+        from app.observability.tracing import Tracing
+
+        return Tracing(self.settings)
 
     def feedback_sink(self, run_id: str | None, score: int) -> None:
         """Forwards a thumbs up or down to LangSmith when tracing is on."""
+        self.tracing.feedback(run_id, score)
 
     @cached_property
     def chat_service(self):

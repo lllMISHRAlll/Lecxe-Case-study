@@ -50,5 +50,6 @@ class AgentState(TypedDict, total=False):
     po_unresolved: list[Any]
     po_notes: list[str]
     # bookkeeping
+    run_id: str | None
     payload: Annotated[dict[str, Any], merge]
     steps: Annotated[list[str], operator.add]

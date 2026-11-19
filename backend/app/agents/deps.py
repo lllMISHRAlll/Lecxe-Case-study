@@ -12,6 +12,7 @@ from app.core.config import Settings
 from app.guardrails.injection import InjectionDetector
 from app.history.repository import HistoryRepository
 from app.llm.port import LLM
+from app.observability.tracing import Tracing
 from app.po.catalog import Catalog
 from app.po.repository import PORepository
 from app.sql.canned.base import Registry
@@ -37,3 +38,4 @@ class GraphDeps:
     history: HistoryRepository
     po_repo: PORepository
     load_catalog: Callable[[], Catalog]
+    tracing: Tracing
