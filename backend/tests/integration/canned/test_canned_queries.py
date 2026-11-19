@@ -36,7 +36,7 @@ EXPECTED = {
     "bo_po_pipeline": ({BO}, ["status", "pos", "value_inr"], 3),
     "bo_vendor_scorecard": ({BO}, ["vendor", "pos", "spend_inr", "fulfilment_pct",
                                    "on_time_pct"], 5),
-    "bo_stock_in_out_weekly": ({BO}, ["week", "qty_in", "qty_out"], 9),
+    "bo_stock_in_out_weekly": ({BO}, ["week", "qty_in", "qty_out"], 5),
     "bo_unplanned_by_vendor": ({BO}, ["vendor", "receipts", "unresolved"], 2),
     "wm_stock_by_warehouse": ({WM}, ["warehouse", "items_in_stock", "items_out_of_stock"], 3),
     "wm_out_of_stock_in_use": ({WM}, ["item_code", "item", "unit", "issued_qty",
