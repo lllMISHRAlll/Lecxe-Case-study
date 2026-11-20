@@ -151,3 +151,17 @@ def test_without_a_draft_short_numbers_are_not_forced_into_po():
     r, llm = router({"intent": "unclear", "confidence": 0.9, "reason": ""})
     assert r.route("all 120").intent is Intent.CLARIFY
     assert len(llm.calls) == 1
+
+
+def test_open_po_lines_in_a_question_is_not_a_request_to_open_a_po():
+    r, llm = router({"intent": "analytics", "confidence": 0.9, "reason": ""})
+    q = "What is the total quantity still pending delivery on open PO lines?"
+    assert r.route(q).intent is Intent.ANALYTICS
+    assert len(llm.calls) == 1
+
+
+@pytest.mark.parametrize("text", ["Open a new PO for relays", "open a purchase order for MS tube"])
+def test_opening_a_po_still_routes_to_the_po_flow(text):
+    r, llm = router()
+    assert r.route(text).intent is Intent.RAISE_PO
+    assert llm.calls == []

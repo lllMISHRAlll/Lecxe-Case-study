@@ -21,14 +21,39 @@ from app.llm.tasks import Task
 log = logging.getLogger(__name__)
 
 Category = Literal["ok", "prompt_injection", "raw_sql", "markup", "destructive", "off_topic",
-                   "abuse"]
+                   "abuse", "write_request", "payment_request"]
 
 _I = re.I | re.S
+# Optional politeness before a command: "can you", "please", "I want to".
+_ASK = (r"^\W*(?:(?:can|could|would|will) you\s+|please\s+|pls\s+|kindly\s+|"
+        r"i (?:want|need|would like|'d like) (?:you )?to\s+|let'?s\s+)*")
+_THE = r"(?:(?:the|a|an|all|every|my|our|this|that|these|those|any|some)\s+){0,2}"
+_RECORDS = (r"(?:vendors?|suppliers?|items?|stock|inventory|categor(?:y|ies)|locations?|"
+            r"warehouses?|transactions?|receipts?|records?|name|status|po-\d+)")
 _RULES: list[tuple[Category, re.Pattern[str]]] = [
     ("destructive", re.compile(
         r"\b(delete|drop|truncate|wipe|erase|remove|destroy|clear|purge)\b.{0,25}"
         r"\b(all|every|entire|whole|the)\b.{0,25}"
         r"\b(tables?|database|db|data|records|rows|schemas?)\b", _I)),
+    # Updates and deletes of business records: the assistant is read-only. Skipped while a PO
+    # draft is open, because "change the vendor to X" then edits the draft.
+    ("write_request", re.compile(
+        _ASK + r"(?:update|change|rename|edit|modify|delete|remove|deactivate|activate|disable|"
+        r"archive)\s+" + _THE + _RECORDS + r"\b", _I)),
+    ("write_request", re.compile(
+        _ASK + r"(?:make|mark|set|turn)\s+(?:\w+\s+){1,3}?(?:as\s+|to\s+)?"
+        r"(?:inactive|active|disabled|deleted|obsolete)\b", _I)),
+    # Payments cannot be made through the assistant; questions about them are still fine.
+    ("payment_request", re.compile(
+        _ASK + r"(?:release|make|process|initiate|send|approve|schedule|authori[sz]e|clear)\s+"
+        r"(?:\w+\s+){0,3}?(?:payments?|tranches?|advance)\b", _I)),
+    ("payment_request", re.compile(
+        _ASK + r"pay\s+(?:the\s+|a\s+|an\s+|this\s+|that\s+|our\s+)?"
+        r"(?:vendor|supplier|invoice|bill|advance|balance|tranche|po\b)", _I)),
+    ("payment_request", re.compile(
+        _ASK + r"mark\s+(?:\w+\s+){0,3}?(?:payment|tranche)s?\s+(?:as\s+)?(?:paid|cleared|done)",
+        _I)),
+    ("payment_request", re.compile(r"\bi (?:want|need|would like) to pay\b", _I)),
     ("prompt_injection", re.compile(
         r"\b(ignore|disregard|forget)\b.{0,30}\b(previous|prior|above|earlier|all|your|the)\b"
         r".{0,20}\b(instructions?|rules|prompts?|directions|guidelines)\b", _I)),

@@ -19,8 +19,9 @@ MIN_CONFIDENCE = 0.6
 LEAVE_DRAFT_CONFIDENCE = 0.8
 
 _PO_REQUEST = re.compile(
-    r"\b(raise|create|make|place|draft|new|open|prepare|issue)\b.{0,25}"
-    r"\b(po|p\.o\.?|purchase order)\b", re.I)
+    r"\b(raise|create|make|place|draft|new|prepare|issue)\b.{0,25}"
+    r"\b(po|p\.o\.?|purchase order)\b"
+    r"|\bopen\s+(a|an|new)\b.{0,10}\b(po|p\.o\.?|purchase order)\b", re.I)
 _SMALL_TALK = re.compile(
     r"^\s*(hi|hello|hey|thanks|thank you|thx|ok|okay|help|good (morning|afternoon|evening)|"
     r"what can you do|who are you)\b[\s!.?]*$", re.I)

@@ -1,0 +1,4 @@
+# Where users are sent for anything the assistant cannot do: changing data, payments, access.
+# Change the address here; no code or prompt needs to be edited.
+support:
+  email: support@example.com

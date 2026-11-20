@@ -9,6 +9,7 @@ from app.agents.deps import GraphDeps
 from app.agents.events import emit, step, stream_text
 from app.agents.prompts.answer import ANSWER_SYSTEM, ANSWER_USER, CHAT_SYSTEM
 from app.agents.state import AgentState
+from app.core.support import support_email
 from app.guardrails.answer_check import check_answer_numbers, template_answer
 from app.guardrails.preprocess import InputRejectedError, preprocess
 from app.llm.tasks import Task
@@ -23,8 +24,12 @@ MAX_ATTEMPTS = 3
 
 BLOCKED = ("Sorry, I can't help with that. I can answer questions about vendors, purchase "
            "orders, payments, receipts and stock.")
-READ_ONLY = ("I can only read data here, so I can't change or delete anything in the database. "
-             "Ask me about vendors, purchase orders, payments or stock instead.")
+READ_ONLY = ("I can only read data here, so I can't change or delete anything in the database, "
+             "including updating, renaming or deactivating records. To request a change, please "
+             "contact support at {email}.")
+PAYMENT_UNSUPPORTED = ("Making or processing payments is not supported here yet. For payment "
+                       "requests, please contact support at {email}. I can still answer "
+                       "questions about payment status.")
 DENIED = ("Only the Procurement Manager can raise purchase orders. I can still help you look "
           "up POs, vendors and stock.")
 CLARIFY = ("Could you say a bit more about what you'd like to see? For example: open POs, "
@@ -36,6 +41,15 @@ ROUTE_LABELS = {"canned": "Using a saved query", "analytics": "Answering from th
                 "raise_po": "Working on a purchase order", "chit_chat": "Replying",
                 "clarify": "Need a bit more detail"}
 PO_ACTION_LABELS = {"confirm": "Confirm PO", "cancel": "Cancel PO", "choose": "Chose an option"}
+
+
+def _blocked_reply(category: str) -> str:
+    email = support_email()
+    if category in ("destructive", "raw_sql", "write_request"):
+        return READ_ONLY.format(email=email)
+    if category == "payment_request":
+        return PAYMENT_UNSUPPORTED.format(email=email)
+    return BLOCKED
 
 
 def _rows_event(result) -> dict[str, Any]:
@@ -66,11 +80,12 @@ class MainNodes:
     def guard_input(self, state: AgentState) -> dict[str, Any]:
         if state.get("message") and not state.get("reply"):
             verdict = self.d.guard.check(state["question"])
-            if not verdict.allowed:
+            editing_draft = (verdict.category == "write_request"
+                             and self.d.history.open_draft(state["conversation_id"]) is not None)
+            if not verdict.allowed and not editing_draft:
                 log.info("Blocked message: %s", verdict.category)
                 step("guard_input", "Message blocked", "error")
-                reply = READ_ONLY if verdict.category in ("destructive", "raw_sql") else BLOCKED
-                return {"reply": reply, "reply_mode": "text"}
+                return {"reply": _blocked_reply(verdict.category), "reply_mode": "text"}
         step("guard_input", "Safety checks passed")
         return {}
 

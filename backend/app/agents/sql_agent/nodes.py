@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -17,6 +18,7 @@ from app.agents.prompts.sql import (
 )
 from app.agents.sql_agent.hints import examples, strip_fences, value_hints
 from app.agents.state import AgentState
+from app.auth.roles import Role
 from app.llm.tasks import Task
 from app.rbac.schema_filter import render_schema, schema_for
 from app.rbac.scope import tables_for
@@ -24,9 +26,24 @@ from app.sql.validator import SqlRejectedError
 
 MAX_ATTEMPTS = 3
 
-NOT_ANSWERABLE = ("I can't answer that from the procurement and inventory data available to "
-                  "your role. Try asking about vendors, purchase orders, payments, receipts or "
-                  "stock.")
+NOT_ANSWERABLE = ("I can't answer that from the data your role can access. Try asking about "
+                  "{topics}.")
+NO_PAYMENT_ACCESS = ("Payment details are not available to your role. I can help with "
+                     "{topics}.")
+_PAYMENT_TABLE = "proc_po_payment_tranches"
+_ABOUT_PAYMENTS = re.compile(r"\bpayments?\b(?!\s+terms)|\btranches?\b|\badvance\b", re.I)
+
+
+def not_answerable_reply(role: Role, question: str) -> str:
+    """Suggest only topics the role can see; say so when the question is about payments."""
+    can_see_payments = _PAYMENT_TABLE in tables_for(role)
+    topics = ("vendors, purchase orders, payments, receipts or stock" if can_see_payments
+              else "vendors, purchase orders, receipts or stock")
+    if not can_see_payments and _ABOUT_PAYMENTS.search(question):
+        return NO_PAYMENT_ACCESS.format(topics=topics)
+    return NOT_ANSWERABLE.format(topics=topics)
+
+
 GAVE_UP = ("Sorry, I couldn't build a query that answers that. Try rephrasing it, or use one "
            "of the suggested questions.")
 
@@ -54,7 +71,8 @@ class SqlAgentNodes:
         tables = [t for t in linked.tables if t.lower() in tables_for(role)]
         step("schema_link", "Found the relevant tables")
         if not linked.answerable or not tables:
-            return {"gave_up": True, "reply": NOT_ANSWERABLE, "reply_mode": "text"}
+            return {"gave_up": True, "reply": not_answerable_reply(role, state["question"]),
+                    "reply_mode": "text"}
         return {"linked_tables": tables, "gave_up": False}
 
     def generate_sql(self, state: AgentState) -> dict[str, Any]:
@@ -86,7 +104,10 @@ class SqlAgentNodes:
             update: dict[str, Any] = {"sql_errors": [*state.get("sql_errors", []), str(exc)],
                                       "sql_valid": False}
             if state.get("attempts", 1) >= MAX_ATTEMPTS:
-                update |= {"gave_up": True, "reply": GAVE_UP, "reply_mode": "text"}
+                role = state["user"].role
+                reply = (not_answerable_reply(role, state["question"])
+                         if "not available to your role" in str(exc) else GAVE_UP)
+                update |= {"gave_up": True, "reply": reply, "reply_mode": "text"}
             return update
         show(validated.sql)
         step("validate_sql", "Checked the query")
