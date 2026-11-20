@@ -20,8 +20,8 @@ Built test-first with FastAPI, LangGraph, a switchable LLM provider (OpenAI or A
 ### Clone Project
 
 ```bash
-git clone <your-repository-url>
-cd <project-folder>
+git clone https://github.com/lllMISHRAlll/Lecxe-Case-study.git
+cd Lecxe-Case-study
 ```
 
 ### 🔐 Environment Setup
@@ -87,6 +87,8 @@ make down           # stops and removes containers
 | `warehouse@demo.local` | Warehouse Manager | Questions on stock and deliveries, 7 suggested questions, no payment schedules |
 
 Users and permissions live in code (`backend/app/auth`, `backend/app/rbac`) and are enforced on the server for every request.
+
+**Questions to try for each role** (suggested questions, typed questions, follow-ups, refusals, and the PO flow): [docs/TEST_QUESTIONS.md](docs/TEST_QUESTIONS.md).
 
 ## ⚡ Features
 
