@@ -10,6 +10,8 @@ Built test-first with FastAPI, LangGraph, a switchable LLM provider (OpenAI or A
 
 ## 🚀 Quick Start
 
+A longer step-by-step version (install, database, backend, frontend, Docker, Vercel, troubleshooting) is in [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md).
+
 ### Prerequisites
 
 - Docker & Docker Compose
