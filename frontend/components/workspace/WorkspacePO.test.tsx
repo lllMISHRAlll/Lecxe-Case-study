@@ -61,14 +61,13 @@ describe("Workspace PO flow", () => {
     expect(screen.getByText("Confirmed")).toBeInTheDocument();
   });
 
-  it("FE-18 sends cancel, and Edit focuses the input for a change", async () => {
+  it("FE-18 sends cancel, and the card has no Edit button", async () => {
     const bodies: unknown[] = [];
     const user = renderWorkspace();
     await startDraft(user, bodies);
 
-    await user.click(screen.getByRole("button", { name: /edit/i }));
+    expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
     const input = screen.getByRole("textbox", { name: /message/i });
-    expect(input).toHaveFocus();
     expect(input).toHaveAttribute("placeholder", expect.stringMatching(/change price to/i));
     expect(bodies).toHaveLength(1);
 

@@ -6,7 +6,7 @@ import type { PODraft } from "@/lib/types";
 import { POCard } from "./POCard";
 
 function setup(draft: PODraft, busy = false) {
-  const handlers = { onConfirm: vi.fn(), onCancel: vi.fn(), onEdit: vi.fn() };
+  const handlers = { onConfirm: vi.fn(), onCancel: vi.fn() };
   const user = userEvent.setup();
   render(<POCard draft={draft} busy={busy} {...handlers} />);
   return { user, ...handlers };
@@ -74,19 +74,18 @@ describe("POCard", () => {
     expect(screen.getByRole("button", { name: /confirming/i })).toBeDisabled();
   });
 
-  it("FE-18 sends Edit and Cancel to their handlers", async () => {
-    const { user, onEdit, onCancel } = setup(makeDraft());
+  it("FE-18 offers only Confirm and Cancel, and sends Cancel to its handler", async () => {
+    const { user, onCancel } = setup(makeDraft());
 
-    await user.click(screen.getByRole("button", { name: /edit/i }));
+    expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /cancel/i }));
 
-    expect(onEdit).toHaveBeenCalledOnce();
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
   it("disables every action while a reply is streaming", () => {
     setup(makeDraft(), true);
-    for (const name of [/confirm/i, /edit/i, /cancel/i]) {
+    for (const name of [/confirm/i, /cancel/i]) {
       expect(screen.getByRole("button", { name })).toBeDisabled();
     }
   });

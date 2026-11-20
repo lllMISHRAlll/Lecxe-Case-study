@@ -23,7 +23,6 @@ export interface ChatMessage {
   error?: { message: string; reference?: string };
   choices?: ChoicesPayload;
   poCreated?: POCreated;
-  feedback?: 1 | -1;
 }
 
 export interface OutputState {
@@ -49,16 +48,12 @@ interface ChatState {
   /** True once the current turn has taken over the results pane. */
   outputLive: boolean;
   streaming: boolean;
-  /** Increments when the user asks to edit a PO draft, so the input can take focus. */
-  editRequests: number;
 
   startTurn: (userText?: string) => void;
   applyEvent: (event: StreamEvent) => void;
   finishTurn: () => void;
   loadConversation: (detail: ConversationDetail) => void;
   newConversation: () => void;
-  setFeedback: (messageId: string, score: 1 | -1) => void;
-  requestEdit: () => void;
 }
 
 const emptyOutput = (): OutputState => ({
@@ -79,7 +74,6 @@ const initialData = () => ({
   turnSteps: [] as StepPayload[],
   outputLive: false,
   streaming: false,
-  editRequests: 0,
 });
 
 /**
@@ -239,12 +233,6 @@ export const useChatStore = create<ChatState>()((set) => ({
 
   newConversation: () => set(initialData()),
 
-  setFeedback: (messageId, score) =>
-    set((state) => ({
-      messages: state.messages.map((m) => (m.id === messageId ? { ...m, feedback: score } : m)),
-    })),
-
-  requestEdit: () => set((state) => ({ editRequests: state.editRequests + 1 })),
 }));
 
 export function resetChatStore() {

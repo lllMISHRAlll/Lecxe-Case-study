@@ -78,6 +78,3 @@ export const getConversation = (id: string) =>
 
 export const deleteConversation = (id: string) =>
   request<void>(`/api/conversations/${encodeURIComponent(id)}`, { method: "DELETE" });
-
-export const sendFeedback = (messageId: string, score: 1 | -1) =>
-  post<void>("/api/feedback", { message_id: messageId, score });

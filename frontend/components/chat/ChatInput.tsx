@@ -1,23 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useState, type FormEvent, type KeyboardEvent } from "react";
 
 interface ChatInputProps {
   onSend: (text: string) => void;
   disabled: boolean;
   placeholder?: string;
-  /** Changing this number moves focus to the input. */
-  focusSignal?: number;
 }
 
-export function ChatInput({ onSend, disabled, placeholder, focusSignal = 0 }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   const [text, setText] = useState("");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const trimmed = text.trim();
-
-  useEffect(() => {
-    if (focusSignal > 0) inputRef.current?.focus();
-  }, [focusSignal]);
 
   function submit(event?: FormEvent) {
     event?.preventDefault();
@@ -40,7 +33,6 @@ export function ChatInput({ onSend, disabled, placeholder, focusSignal = 0 }: Ch
       </label>
       <textarea
         id="chat-message"
-        ref={inputRef}
         rows={2}
         value={text}
         disabled={disabled}

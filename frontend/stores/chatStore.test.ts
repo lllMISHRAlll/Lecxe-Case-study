@@ -209,15 +209,4 @@ describe("chat store", () => {
     expect(store().output.poDraft).toBeNull();
   });
 
-  it("records feedback on a message", () => {
-    store().loadConversation(conversationDetails["conv-1"]);
-    store().setFeedback("m2", 1);
-    expect(store().messages[1].feedback).toBe(1);
-  });
-
-  it("counts edit requests so the input can take focus", () => {
-    const before = store().editRequests;
-    store().requestEdit();
-    expect(store().editRequests).toBe(before + 1);
-  });
 });

@@ -16,12 +16,20 @@ MAX_TURNS = 3
 
 _FOLLOW_UP = re.compile(
     r"^\s*(and|also|what about|how about|only|now|but|instead|same|then|ok|okay|why|so)\b"
-    r"|\b(it|that one|those|these|them|they|their|same|this one|above)\b", re.I)
+    r"|\b(it|that one|those|these|them|they|their|same|this one|above)\b"
+    # "this PO", "that order", "the last PO", "the PO I just raised": a reference to something
+    # from an earlier turn, with no identifier in the message itself.
+    r"|\b(this|that|the\s+(?:same|last|previous|latest|recent|above))\s+"
+    r"(?:po|pos|order|orders|purchase\s+orders?|vendor|vendors|item|items|receipt|payment|one)\b"
+    r"|\bi\s+(?:just\s+)?(?:raised|created|made|placed)\b", re.I)
 
 REWRITE_SYSTEM = (
     "Rewrite the user's latest message as one standalone question about procurement or "
     "inventory data, using the earlier turns only to fill in what the message refers to. "
-    "Keep the user's intent and wording where possible. Do not answer it."
+    "Keep the user's intent and wording where possible. When the message points at something "
+    "from the earlier turns (\"this PO\", \"that vendor\", \"the one I just raised\"), replace "
+    "the reference with its exact identifier or name from those turns, such as the PO number. "
+    "Do not answer it."
 )
 
 

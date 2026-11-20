@@ -55,7 +55,7 @@ Also check: the step tracker ticks, the SQL panel shows the query, and the answe
 | Raise a PO for 100 hex nuts from Anand Engineering at 3 | Ambiguous item | Buttons for the matching hex nut items |
 | Raise a PO for 5 unobtainium widgets from Anand Engineering | Unknown item | Asks for the exact name or item code |
 | Raise a PO for 10 kg Relay BO-EL-0071 from Anand Engineering at 450 | Unit differs from stock unit | Card warns the unit differs from pcs |
-| With a draft open: change the price to 400 | Edit | Card updates |
+| With a draft open: change the price to 400 (typed in chat) | Change a field | Card updates |
 | With a draft open: add 5 relays BO-EL-0140 at 300 | Add a line | Card shows two lines |
 | With a draft open: remove line 2 | Remove a line | Back to one line |
 | Order 2 items from Crestline Steels at 410 USD | USD order | Card in $ |

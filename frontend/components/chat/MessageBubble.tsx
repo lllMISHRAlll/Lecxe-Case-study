@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   message: ChatMessage;
   /** What the assistant is doing right now, shown while waiting for the first words. */
   status?: string;
-  /** Extra content under an assistant message: choices, feedback and so on. */
+  /** Extra content under an assistant message: choices and so on. */
   children?: ReactNode;
 }
 

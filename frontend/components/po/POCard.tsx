@@ -9,7 +9,6 @@ interface POCardProps {
   busy: boolean;
   onConfirm: (idempotencyKey: string) => void;
   onCancel: () => void;
-  onEdit: () => void;
 }
 
 const money = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -34,7 +33,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 const notSet = <span className="font-normal text-muted">Not set</span>;
 
 /** Confirmation card for a PO draft. Remount it (via `key`) for each new draft. */
-export function POCard({ draft, busy, onConfirm, onCancel, onEdit }: POCardProps) {
+export function POCard({ draft, busy, onConfirm, onCancel }: POCardProps) {
   // Clicks are discrete events, so React re-renders (disabling the button) before the next
   // click is handled. That makes a double click send exactly one confirm.
   const [confirming, setConfirming] = useState(false);
@@ -146,14 +145,6 @@ export function POCard({ draft, busy, onConfirm, onCancel, onEdit }: POCardProps
             className="rounded-md px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onEdit}
-            disabled={busy}
-            className="rounded-md border border-line px-3 py-2 text-sm font-medium hover:bg-sunken disabled:opacity-50"
-          >
-            Edit
           </button>
           <button
             type="button"

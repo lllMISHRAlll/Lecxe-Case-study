@@ -11,7 +11,6 @@ import {
   listConversations,
   login,
   logout,
-  sendFeedback,
 } from "./api";
 
 describe("API client", () => {
@@ -52,7 +51,6 @@ describe("API client", () => {
   it("returns undefined for 204 responses", async () => {
     await expect(logout()).resolves.toBeUndefined();
     await expect(deleteConversation("conv-1")).resolves.toBeUndefined();
-    await expect(sendFeedback("m1", 1)).resolves.toBeUndefined();
   });
 
   it("reads the current user, buttons and conversations", async () => {
@@ -65,13 +63,13 @@ describe("API client", () => {
   it("sends JSON bodies with credentials", async () => {
     let seen: { body: unknown; credentials: string } | undefined;
     server.use(
-      http.post("/api/feedback", async ({ request }) => {
+      http.post("/api/auth/login", async ({ request }) => {
         seen = { body: await request.json(), credentials: request.credentials };
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    await sendFeedback("m9", -1);
-    expect(seen?.body).toEqual({ message_id: "m9", score: -1 });
+    await login("owner@demo.local", "pw").catch(() => undefined);
+    expect(seen?.body).toEqual({ email: "owner@demo.local", password: "pw" });
     expect(seen?.credentials).toBe("same-origin");
   });
 });

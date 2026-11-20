@@ -54,8 +54,6 @@ export const handlers = [
 
   http.delete("/api/conversations/:id", () => new HttpResponse(null, { status: 204 })),
 
-  http.post("/api/feedback", () => new HttpResponse(null, { status: 204 })),
-
   http.post(
     "/api/chat/stream",
     () =>

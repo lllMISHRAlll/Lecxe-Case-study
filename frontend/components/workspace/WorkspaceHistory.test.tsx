@@ -61,23 +61,6 @@ describe("Workspace history and restore", () => {
     await waitFor(() => expect(window.location.search).toBe("?c=c-new"));
   });
 
-  it("FE-20 shows feedback buttons under finished answers", async () => {
-    let body: unknown;
-    server.use(
-      http.post("/api/feedback", async ({ request }) => {
-        body = await request.json();
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
-    window.history.replaceState(null, "", "/chat?c=conv-1");
-    const user = renderWorkspace();
-
-    await user.click(await screen.findByRole("button", { name: "Helpful" }));
-
-    await waitFor(() => expect(body).toEqual({ message_id: "m2", score: 1 }));
-    expect(screen.getByRole("button", { name: "Helpful" })).toHaveAttribute("aria-pressed", "true");
-  });
-
   it("New chat clears the screen and the URL", async () => {
     window.history.replaceState(null, "", "/chat?c=conv-1");
     const user = renderWorkspace();

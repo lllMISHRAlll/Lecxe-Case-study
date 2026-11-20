@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { CannedButtons } from "@/components/chat/CannedButtons";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChoiceButtons } from "@/components/chat/ChoiceButtons";
-import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MessageList } from "@/components/chat/MessageList";
 import { HistoryDrawer } from "@/components/history/HistoryDrawer";
 import { ChatSkeleton } from "@/components/layout/Skeletons";
@@ -32,10 +31,7 @@ export function Workspace({ user }: WorkspaceProps) {
   const outputLive = useChatStore((s) => s.outputLive);
   const title = useChatStore((s) => s.title);
   const conversationId = useChatStore((s) => s.conversationId);
-  const editRequests = useChatStore((s) => s.editRequests);
   const newConversation = useChatStore((s) => s.newConversation);
-  const requestEdit = useChatStore((s) => s.requestEdit);
-  const setFeedback = useChatStore((s) => s.setFeedback);
 
   const draft = output.poDraft;
   const draftOpen = draft?.status === "open";
@@ -89,13 +85,6 @@ export function Workspace({ user }: WorkspaceProps) {
           }
         />
       )}
-      {message.id && !message.streaming && (
-        <FeedbackButtons
-          messageId={message.id}
-          value={message.feedback}
-          onSaved={(score) => setFeedback(message.id!, score)}
-        />
-      )}
     </>
   );
 
@@ -106,7 +95,6 @@ export function Workspace({ user }: WorkspaceProps) {
       busy={streaming}
       onConfirm={(key) => send({ po_action: { type: "confirm", idempotency_key: key } })}
       onCancel={() => send({ po_action: { type: "cancel" } })}
-      onEdit={requestEdit}
     />
   );
 
@@ -174,7 +162,6 @@ export function Workspace({ user }: WorkspaceProps) {
           {!loading && messages.length > 0 && <CannedButtons disabled={streaming} onRun={run} />}
           <ChatInput
             disabled={streaming || loading}
-            focusSignal={editRequests}
             onSend={(text) => send({ message: text }, text)}
             placeholder={
               draftOpen

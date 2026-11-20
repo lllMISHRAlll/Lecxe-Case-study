@@ -50,13 +50,27 @@ def test_rewriter_failure_keeps_the_original_question():
 
 @pytest.mark.parametrize("text", ["and last month?", "what about Zenith?", "only open ones",
                                   "show them as a pie", "same for USD", "why?",
-                                  "How about those vendors?"])
+                                  "How about those vendors?",
+                                  "can you return me the details of this PO",
+                                  "show the lines of that order", "who is the vendor of the PO I just raised",
+                                  "details of the last PO", "what's the status of the previous po",
+                                  "which items are in this purchase order"])
 def test_follow_up_markers_are_detected(text):
     assert is_follow_up(text)
 
 
 @pytest.mark.parametrize("text", ["Which warehouse holds the most stock right now?",
                                   "Show spend by vendor for August 2026",
-                                  "List unexpected receipts that still need reconciling"])
+                                  "List unexpected receipts that still need reconciling",
+                                  "give me the details of PO-2026-0052",
+                                  "Which purchase orders are overdue?"])
 def test_standalone_questions_are_not_follow_ups(text):
     assert not is_follow_up(text)
+
+
+def test_a_reference_to_the_po_just_raised_is_resolved_from_the_confirmation_turn():
+    history = [Turn("raise a po for cobalt", "Done. PO-2026-0052 is raised with Cobalt Engineering.")]
+    llm = ScriptedLLM({Task.REWRITE: [{"question": "Give me the details of PO-2026-0052"}]})
+    out = FollowUpRewriter(llm).rewrite("can you return me the details of this PO", history)
+    assert out == "Give me the details of PO-2026-0052"
+    assert "PO-2026-0052" in llm.calls_for(Task.REWRITE)[0].user
