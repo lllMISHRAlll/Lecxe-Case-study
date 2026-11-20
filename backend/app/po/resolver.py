@@ -15,6 +15,7 @@ MATCH_SCORE = 85
 CHOICE_SCORE = 70
 CLEAR_LEAD = 8
 MAX_CHOICES = 5
+MIN_NAME_CHARS = 8  # shorter names would match inside unrelated text
 
 
 @dataclass
@@ -60,6 +61,17 @@ class EntityResolver:
     def item(self, query: str) -> Resolution[ItemRef]:
         active = [i for i in self.catalog.items if i.is_active]
         return _resolve(query, active, lambda i: i.name, lambda i: [i.code, i.name])
+
+    def items_within(self, text: str) -> list[ItemRef]:
+        """Items whose full name or code appears inside `text`: a list pasted as one string."""
+        wanted = f" {_norm(text)} "
+        found = [i for i in self.catalog.items if i.is_active and any(
+            len(n) >= MIN_NAME_CHARS and f" {n} " in wanted
+            for n in (_norm(i.code), _norm(i.name)))]
+        names = {i.id: _norm(i.name) for i in found}
+        # A name that is part of a longer matched name is not a separate item.
+        return [i for i in found if not any(
+            names[i.id] != names[o.id] and names[i.id] in names[o.id] for o in found)]
 
     def location(self, query: str) -> Resolution[LocationRef]:
         return _resolve(query, self.catalog.locations, lambda loc: loc.name,

@@ -114,4 +114,42 @@ describe("Workspace PO flow", () => {
     await waitFor(() => expect(bodies).toHaveLength(2));
     expect(bodies[1]).toEqual({ conversation_id: "c-ch", po_action: { type: "choose", choice: "v2" } });
   });
+
+  it("sends several ticked options as one choose action", async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      streamHandler(
+        [
+          sse("conversation", { conversation_id: "c-multi", title: "PO" }),
+          sse("token", { text: "Which items?" }),
+          sse("choices", {
+            prompt: "Which item did you mean?",
+            multiple: true,
+            options: [
+              { id: "item:a", label: "Hex Nut M8" },
+              { id: "item:b", label: "Hex Nut M10" },
+              { id: "item:c", label: "Hex Bolt" },
+            ],
+          }),
+          sse("done", { message_id: "m1" }),
+        ],
+        (b) => bodies.push(b),
+      ),
+    );
+    const user = renderWorkspace();
+    await user.type(screen.getByRole("textbox", { name: /message/i }), "PO for hex{Enter}");
+    const first = await screen.findByRole("button", { name: "Hex Nut M8" });
+    await waitFor(() => expect(first).toBeEnabled());
+
+    await user.click(first);
+    await user.click(screen.getByRole("button", { name: "Hex Bolt" }));
+    await user.click(screen.getByRole("button", { name: /submit \(2\)/i }));
+
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(bodies[1]).toEqual({
+      conversation_id: "c-multi",
+      po_action: { type: "choose", choices: ["item:a", "item:c"] },
+    });
+    expect(await screen.findByText("Hex Nut M8, Hex Bolt")).toBeInTheDocument();
+  });
 });

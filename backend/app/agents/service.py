@@ -6,7 +6,7 @@ import logging
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -34,12 +34,24 @@ def _ai_unavailable(exc: BaseException | None) -> bool:
     return False
 
 
+MAX_MULTI_CHOICES = 20
+
+
 class POAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["confirm", "cancel", "choose"]
     idempotency_key: str | None = None
     choice: str | None = Field(default=None, max_length=200)
+    # Several options at once ("kind:id" each, same kind): items can be picked together.
+    choices: list[Annotated[str, Field(max_length=200)]] | None = Field(
+        default=None, max_length=MAX_MULTI_CHOICES)
+
+    @model_validator(mode="after")
+    def choose_needs_a_choice(self) -> POAction:
+        if self.type == "choose" and not (self.choice or self.choices):
+            raise ValueError("A choose action needs choice or choices.")
+        return self
 
 
 class ChatRequest(BaseModel):
@@ -137,4 +149,5 @@ class ChatService:
             return self.deps.registry.get(request.button_id).label
         assert request.po_action is not None
         return {"confirm": "Confirm PO", "cancel": "Cancel PO"}.get(
-            request.po_action.type, "Chose an option")
+            request.po_action.type, "Chose options" if request.po_action.choices
+            else "Chose an option")

@@ -23,8 +23,14 @@ def test_grd_02_control_characters_removed_and_unicode_normalised():
     assert result.text == "Spend by vendor for Zenith"
 
 
-def test_whitespace_is_collapsed_but_newlines_kept_as_spaces():
-    assert preprocess("  open\n\n POs   please ").text == "open POs please"
+def test_spaces_are_collapsed_but_line_breaks_are_kept():
+    assert preprocess("  open   POs \t please ").text == "open POs please"
+    assert preprocess("  item A  \n item   B \n\n\n\n item C ").text == "item A\nitem B\n\nitem C"
+
+
+def test_a_pasted_list_keeps_one_item_per_line():
+    text = "Shutter 6000x2550mm\nBrushed DC motor\nWindow Rectangle"
+    assert preprocess(text).text.split("\n") == text.split("\n")
 
 
 def test_grd_06_secrets_typed_into_chat_are_masked_and_flagged():

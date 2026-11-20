@@ -28,8 +28,9 @@ def preprocess(raw: str) -> CleanInput:
         ch if ch in "\n\t" or unicodedata.category(ch) not in ("Cc", "Cf") else " "
         for ch in text
     )
-    text = re.sub(r"\s+", " ", text).strip()
-    text = re.sub(r" (?=[ ])", "", text)
+    # Spaces collapse, line breaks stay: a pasted list is one item per line.
+    text = "\n".join(re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n"))
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
     if not text:
         raise InputRejectedError("Please type a question.")
     if len(text) > MAX_CHARS:

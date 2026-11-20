@@ -91,21 +91,28 @@ class PONodes:
     def choose(self, state: AgentState) -> dict[str, Any]:
         draft = state["po_draft"]
         assert draft is not None
-        kind, _, choice_id = str((state.get("po_action") or {}).get("choice", "")).partition(":")
-        pending = (draft.pending or {}).get("pending", {}) if draft.pending else {}
+        action = state.get("po_action") or {}
+        picks = [str(c) for c in (action.get("choices") or [action.get("choice", "")])]
+        parsed = [p.partition(":") for p in picks]
+        kind = parsed[0][0]
+        ids = [cid for k, _, cid in parsed if k == kind]  # one kind per answer
+        waiting = draft.pending or {}
+        pending = waiting.get("pending", {})
+        queue = [Unresolved.model_validate(q) for q in waiting.get("queue", [])]
         try:
             draft = apply_choice(
                 draft,
                 kind,
-                choice_id,
+                ids,
                 self.d.load_catalog(),
                 **{k: Decimal(v) if k != "unit" else v for k, v in pending.items()},
             )
         except StopIteration:
             return {"po_notes": ["That option is no longer available."]}
         draft.pending = None
-        step("choose", "Applied your choice")
-        return {"po_draft": draft}
+        step("choose", "Applied your choice" if len(ids) < 2 else f"Applied {len(ids)} choices")
+        # Questions that were waiting behind this one are asked next, so none is dropped.
+        return {"po_draft": draft, "po_unresolved": queue}
 
     def review_draft(self, state: AgentState) -> dict[str, Any]:
         draft = state["po_draft"]
@@ -128,7 +135,8 @@ class PONodes:
     def ask_choice(self, state: AgentState) -> dict[str, Any]:
         draft = state["po_draft"]
         assert draft is not None
-        first = next(u for u in state["po_unresolved"] if u.kind != "invalid")
+        asks = [u for u in state["po_unresolved"] if u.kind != "invalid"]
+        first, waiting = asks[0], asks[1:]
         if not first.choices:
             reply = (
                 f"I couldn't find a {first.kind} matching '{first.query}'. Could you give "
@@ -136,7 +144,8 @@ class PONodes:
             )
         else:
             reply = f"Which {first.kind} did you mean by '{first.query}'?"
-            draft.pending = {"kind": first.kind, "pending": first.pending}
+            draft.pending = {"kind": first.kind, "pending": first.pending,
+                             "queue": [u.model_dump(mode="json") for u in waiting]}
             emit(
                 "choices",
                 {
@@ -144,6 +153,7 @@ class PONodes:
                     "options": [
                         {"id": f"{first.kind}:{o.id}", "label": o.label} for o in first.choices
                     ],
+                    "multiple": first.kind == "item" and len(first.choices) > 1,
                 },
             )
         draft.last_question = reply

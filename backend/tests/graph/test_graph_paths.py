@@ -406,3 +406,75 @@ def test_a_failed_step_is_marked_as_an_error(make_service):
     finally:
         REGISTRY._queries.pop("pm_broken2", None)
     assert {"node": "execute_sql", "label": "The query failed", "status": "error"} in steps
+
+
+def _po_service(make_service, extractions):
+    return make_service(base_script(**{
+        Task.PO_EXTRACT: extractions,
+        Task.ROUTE: lambda s, u: {"intent": "raise_po", "confidence": 0.9, "reason": ""}}))
+
+
+def _draft_of(fresh_db, conversation_id):
+    from app.core.clock import FixedClock
+    from app.history.repository import HistoryRepository
+    from tests.graph.conftest import NOW
+
+    return HistoryRepository(fresh_db.write_engine, clock=FixedClock(NOW)).open_draft(
+        conversation_id)
+
+
+def test_a_pasted_list_reaches_the_extractor_one_item_per_line(make_service):
+    service, llm, _ = _po_service(make_service, [{"lines": []}])
+    run(service, PM, message="raise a po for\nMS Tube 25x40\nHex Nut M8\nRelay 240V")
+
+    call = llm.calls_for(Task.PO_EXTRACT)[0]
+    assert call.user.endswith("MS Tube 25x40\nHex Nut M8\nRelay 240V")
+    assert "one per line" in call.system and "Never join" in call.system
+
+
+def test_several_items_in_one_message_all_land_on_the_draft(make_service, fresh_db):
+    extractions = [{"vendor": "Zenith Steels Pvt. Ltd.", "lines": [
+        {"item": "RM-MT-0001"}, {"item": "BO-EL-0001"}, {"item": "BO-MC-0001"},
+        {"item": "BO-MC-0002"}]}]
+    service, _, _ = _po_service(make_service, extractions)
+    first = run(service, PM, message="raise a po for 4 items")
+
+    conversation_id = events_of(first, "conversation")[0]["conversation_id"]
+    draft = _draft_of(fresh_db, conversation_id)
+    assert [ln.item.code for ln in draft.lines] == [
+        "RM-MT-0001", "BO-EL-0001", "BO-MC-0001", "BO-MC-0002"]
+
+
+def test_an_ambiguous_item_offers_a_multi_select_and_a_vendor_does_not(make_service):
+    extractions = [{"vendor": "steels", "lines": [{"item": "solenoid"}]}]
+    service, _, _ = _po_service(make_service, extractions)
+    first = run(service, PM, message="raise a po for steels, solenoid")
+
+    choices = events_of(first, "choices")[0]
+    assert all(o["id"].startswith("vendor:") for o in choices["options"])
+    assert choices["multiple"] is False
+
+
+def test_questions_behind_the_first_are_asked_next_and_items_can_be_picked_together(
+        make_service, fresh_db):
+    extractions = [{"vendor": "steels", "lines": [{"item": "solenoid", "quantity": 5}]}]
+    service, _, _ = _po_service(make_service, extractions)
+    first = run(service, PM, message="raise a po for steels, solenoid")
+    conversation_id = events_of(first, "conversation")[0]["conversation_id"]
+    vendors = events_of(first, "choices")[0]["options"]
+    zenith = next(o for o in vendors if o["label"].startswith("Zenith Steels"))
+
+    second = run(service, PM, conversation_id=conversation_id,
+                 po_action={"type": "choose", "choice": zenith["id"]})
+    items = events_of(second, "choices")[0]
+    assert items["multiple"] is True
+    assert all(o["id"].startswith("item:") for o in items["options"])
+
+    ids = [o["id"] for o in items["options"][:2]]
+    third = run(service, PM, conversation_id=conversation_id,
+                po_action={"type": "choose", "choices": ids})
+    draft = _draft_of(fresh_db, conversation_id)
+    assert draft.vendor.name.startswith("Zenith Steels")
+    assert len(draft.lines) == 2
+    assert all(ln.quantity == 5 for ln in draft.lines)
+    assert "Which" not in "".join(t["text"] for t in events_of(third, "token"))

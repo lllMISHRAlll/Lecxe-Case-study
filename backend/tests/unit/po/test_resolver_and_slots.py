@@ -180,3 +180,38 @@ def test_update_all_lines_without_a_unit_filter():
         resolver,
     )
     assert [ln.unit_price for ln in d.lines] == [Decimal(99), Decimal(99)]
+
+
+def test_items_named_inside_one_blob_are_found_separately():
+    found = resolver.items_within("Relay – 240V, 2 Pole Hex Nut M8 Hinge Set")
+    assert {i.code for i in found} == {"BO-EL-0001", "BO-MC-0001", "BO-MC-0002"}
+
+
+def test_items_within_ignores_a_single_item_and_unrelated_text():
+    assert resolver.items_within("Hinge Set") == [resolver.item("Hinge Set").match]
+    assert resolver.items_within("unobtainium widget") == []
+
+
+def test_a_line_with_several_items_is_split_on_line_breaks_and_semicolons():
+    extraction = SlotExtraction(lines=[ExtractedLine(item="Hinge Set\nHex Nut M8; Relay 240V",
+                                                     quantity=4)])
+    draft, unresolved = merge_extraction(draft_with(), extraction, resolver)
+    assert [ln.item.code for ln in draft.lines] == ["BO-MC-0002", "BO-MC-0001", "BO-EL-0001"]
+    assert all(ln.quantity is None for ln in draft.lines)  # the 4 was not for each item
+    assert unresolved == []
+
+
+def test_a_joined_list_the_model_did_not_split_still_becomes_separate_lines():
+    extraction = SlotExtraction(lines=[ExtractedLine(
+        item="Relay – 240V, 2 Pole Hex Nut M8 Hinge Set", quantity=3)])
+    draft, unresolved = merge_extraction(draft_with(), extraction, resolver)
+    assert {ln.item.code for ln in draft.lines} == {"BO-EL-0001", "BO-MC-0001", "BO-MC-0002"}
+    assert all(ln.quantity is None for ln in draft.lines)
+    assert unresolved == []
+
+
+def test_a_single_ambiguous_item_is_still_a_choice():
+    extraction = SlotExtraction(lines=[ExtractedLine(item="hex nut", quantity=5)])
+    draft, unresolved = merge_extraction(draft_with(), extraction, resolver)
+    assert draft.lines == []
+    assert unresolved[0].kind == "item" and unresolved[0].pending == {"quantity": "5.0"}

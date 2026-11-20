@@ -76,8 +76,16 @@ export function Workspace({ user }: WorkspaceProps) {
         <ChoiceButtons
           choices={message.choices}
           disabled={streaming}
-          onChoose={(option) =>
-            send({ po_action: { type: "choose", choice: option.id } }, option.label)
+          onChoose={(picked) =>
+            send(
+              {
+                po_action:
+                  picked.length === 1
+                    ? { type: "choose", choice: picked[0].id }
+                    : { type: "choose", choices: picked.map((o) => o.id) },
+              },
+              picked.map((o) => o.label).join(", "),
+            )
           }
         />
       )}

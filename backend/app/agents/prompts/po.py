@@ -13,6 +13,9 @@ Return only what the message states or clearly implies:
     for_unit pcs, quantity 10; and apply_to all, for_unit kg, quantity 2.
   * action "remove" to delete a line (give line).
   * item is the item name or code as written; quantity, unit and unit_price as numbers.
+- A message can list several items, one per line or separated by commas or semicolons. Return
+  one "add" entry per item, with that item's own name. Never join several items into one
+  "item" value, and never copy the number of items into a quantity.
 - A bare answer like "10" or "450 each" answers the last question asked.
 - currency (INR or USD), payment_terms, placed_on, expected_delivery_date (ISO dates),
   delivery_location.

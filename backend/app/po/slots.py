@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Literal
@@ -10,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from app.domain.vocabulary import canonical_unit
 from app.po.catalog import Catalog
-from app.po.models import PODraft, POLine
+from app.po.models import ItemRef, PODraft, POLine
 from app.po.resolver import EntityResolver
 from app.po.rules import Option
 
@@ -130,24 +131,61 @@ def merge_extraction(draft: PODraft, extraction: SlotExtraction,
                     target.unit = None
             _set_fields(target, extracted, unresolved)
             continue
-        found_item = resolver.item(extracted.item or "")
-        if found_item.match is None:
-            unresolved.append(Unresolved(
-                kind="item", query=extracted.item or "", choices=[
-                    Option(i.id, f"{i.name} ({i.code})") for i in found_item.choices],
-                pending={k: str(v) for k, v in extracted.model_dump(
-                    include={"quantity", "unit", "unit_price"}).items() if v is not None}))
-            continue
-        existing = next((ln for ln in d.lines if ln.item and ln.item.id == found_item.match.id),
-                        None)
-        if existing is not None:
-            # The item is already on the draft: fill that line rather than adding it twice.
-            _set_fields(existing, extracted, unresolved)
-            continue
-        line = POLine(position=len(d.lines) + 1, item=found_item.match)
-        _set_fields(line, extracted, unresolved)
-        d.lines.append(line)
+        _add_items(d, extracted, resolver, unresolved)
     return d, unresolved
+
+
+_LIST_SEPARATORS = re.compile(r"[\n;]+")
+
+
+def _without_numbers(extracted: ExtractedLine, item: str) -> ExtractedLine:
+    """One of several items: a quantity or price given for the group isn't each item's."""
+    return extracted.model_copy(update={"item": item, "quantity": None, "unit": None,
+                                        "unit_price": None})
+
+
+def _add_items(d: PODraft, extracted: ExtractedLine, resolver: EntityResolver,
+               unresolved: list[Unresolved]) -> None:
+    """Adds the item(s) named by one extracted line. A pasted list becomes one line each."""
+    text = extracted.item or ""
+    parts = [p.strip() for p in _LIST_SEPARATORS.split(text) if p.strip()]
+    if len(parts) > 1:
+        for part in parts:
+            _add_one(d, _without_numbers(extracted, part), resolver, unresolved)
+        return
+    found = resolver.item(text)
+    if found.match is None:
+        named = resolver.items_within(text)
+        if len(named) > 1:  # the model joined several items into one
+            for item in named:
+                _add_item(d, item, _without_numbers(extracted, item.name), unresolved)
+            return
+    _add_one(d, extracted, resolver, unresolved)
+
+
+def _add_one(d: PODraft, extracted: ExtractedLine, resolver: EntityResolver,
+             unresolved: list[Unresolved]) -> None:
+    found = resolver.item(extracted.item or "")
+    if found.match is None:
+        unresolved.append(Unresolved(
+            kind="item", query=extracted.item or "", choices=[
+                Option(i.id, f"{i.name} ({i.code})") for i in found.choices],
+            pending={k: str(v) for k, v in extracted.model_dump(
+                include={"quantity", "unit", "unit_price"}).items() if v is not None}))
+        return
+    _add_item(d, found.match, extracted, unresolved)
+
+
+def _add_item(d: PODraft, item: ItemRef, extracted: ExtractedLine,
+              unresolved: list[Unresolved]) -> None:
+    existing = next((ln for ln in d.lines if ln.item and ln.item.id == item.id), None)
+    if existing is not None:
+        # The item is already on the draft: fill that line rather than adding it twice.
+        _set_fields(existing, extracted, unresolved)
+        return
+    line = POLine(position=len(d.lines) + 1, item=item)
+    _set_fields(line, extracted, unresolved)
+    d.lines.append(line)
 
 
 def _target(draft: PODraft, number: int | None) -> POLine | None:
@@ -156,22 +194,29 @@ def _target(draft: PODraft, number: int | None) -> POLine | None:
     return draft.lines[-1] if draft.lines else None
 
 
-def apply_choice(draft: PODraft, kind: str, choice_id: str, catalog: Catalog,
+def apply_choice(draft: PODraft, kind: str, choice_id: str | list[str], catalog: Catalog,
                  **pending: Decimal | str | None) -> PODraft:
+    """Applies the user's pick. Only items can be several at once; other kinds take the first."""
     d = draft.model_copy(deep=True)
+    ids = [choice_id] if isinstance(choice_id, str) else list(choice_id)
+    if kind == "item":
+        for item_id in dict.fromkeys(ids):
+            item = next(i for i in catalog.items if i.id == item_id)
+            line = next((ln for ln in d.lines if ln.item and ln.item.id == item.id), None)
+            if line is None:
+                line = POLine(position=len(d.lines) + 1, item=item)
+                d.lines.append(line)
+            for name in ("quantity", "unit_price"):
+                if pending.get(name) is not None:
+                    setattr(line, name, Decimal(str(pending[name])))
+            if pending.get("unit"):
+                line.unit = str(pending["unit"])
+        return d
+    choice_id = ids[0]
     if kind == "vendor":
         d.vendor = next(v for v in catalog.vendors if v.id == choice_id)
     elif kind == "location":
         d.delivery_location = next(loc for loc in catalog.locations if loc.id == choice_id)
-    elif kind == "item":
-        item = next(i for i in catalog.items if i.id == choice_id)
-        line = POLine(position=len(d.lines) + 1, item=item)
-        for name in ("quantity", "unit_price"):
-            if pending.get(name) is not None:
-                setattr(line, name, Decimal(str(pending[name])))
-        if pending.get("unit"):
-            line.unit = str(pending["unit"])
-        d.lines.append(line)
     elif kind == "payment_terms":
         d.payment_terms = choice_id
     return d

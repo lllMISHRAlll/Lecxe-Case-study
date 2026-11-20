@@ -65,6 +65,7 @@ class Option(_Event):
 class ChoicesEvent(_Event):
     prompt: str
     options: list[Option]
+    multiple: bool = False  # true: the user may pick several options, then submit
 
 
 class PODraftEvent(_Event):

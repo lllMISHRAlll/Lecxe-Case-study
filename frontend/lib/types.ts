@@ -73,6 +73,8 @@ export interface Choice {
 export interface ChoicesPayload {
   prompt: string;
   options: Choice[];
+  /** True when the user may tick several options and submit them together. */
+  multiple?: boolean;
 }
 
 export interface Ref {
@@ -132,7 +134,8 @@ export type StreamEvent =
 export type POAction =
   | { type: "confirm"; idempotency_key: string }
   | { type: "cancel" }
-  | { type: "choose"; choice: string };
+  | { type: "choose"; choice: string }
+  | { type: "choose"; choices: string[] };
 
 export interface ChatRequest {
   conversation_id?: string;

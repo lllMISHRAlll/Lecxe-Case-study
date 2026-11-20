@@ -38,11 +38,15 @@ Errors always use this shape:
 { "conversation_id": "uuid", "po_action": { "type": "confirm", "idempotency_key": "uuid" } }
 { "conversation_id": "uuid", "po_action": { "type": "cancel" } }
 { "conversation_id": "uuid", "po_action": { "type": "choose", "choice": "option-id" } }
+{ "conversation_id": "uuid", "po_action": { "type": "choose", "choices": ["item:<id>", "item:<id>"] } }
 ```
 
 Exactly one of `message`, `button_id` or `po_action` is allowed, and unknown fields are rejected
 with `422`. Option ids come from the `choices` event and look like `kind:value`, for example
-`vendor:<id>`, `item:<id>` or `payment_terms:30 Days Credit`.
+`vendor:<id>`, `item:<id>` or `payment_terms:30 Days Credit`. A `choose` action needs `choice`
+or `choices` (at most 20, all of the same kind). When the `choices` event has `multiple: true`
+the user ticks several options and submits them together; only items can be picked together.
+If several things were unclear, the assistant asks about them one after another.
 
 Response: `text/event-stream`. Each event is `event: <type>` then `data: <json>` then a blank line.
 
@@ -55,7 +59,7 @@ Response: `text/event-stream`. Each event is `event: <type>` then `data: <json>`
 | `chart` | `ChartSpec` | Chart |
 | `token` | `{ "text" }` | Appended to the assistant message |
 | `answer_replace` | `{ "text" }` | Replaces the assistant message text |
-| `choices` | `{ "prompt", "options": [{ "id", "label" }] }` | Buttons under the message |
+| `choices` | `{ "prompt", "options": [{ "id", "label" }], "multiple" }` | Buttons under the message; with `multiple`, tick boxes and a Submit button |
 | `po_draft` | `{ "draft": PODraft }` | PO confirmation card |
 | `po_created` | `{ "po_number", "po_id", "total_amount", "currency" }` | Success message |
 | `error` | `{ "message", "reference" }` | Error message, input re-enabled |
