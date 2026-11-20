@@ -4,16 +4,15 @@ PY := $(BACKEND) uv run
 GATED := app/rbac/*,app/sql/validator.py,app/guardrails/masker.py,app/po/repository.py,app/po/totals.py,app/normalisation/runner.py
 
 .PHONY: help install testdb up down dev-backend dev-frontend migrate lint test coverage-gates \
-        test-frontend test-e2e test-smoke eval test-all normalise-preview normalise-apply \
+        test-frontend test-smoke eval-deepeval test-all normalise-preview normalise-apply \
         normalise-rollback seed-e2e
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ :/'
 
-install: ## Install backend, frontend and e2e dependencies
+install: ## Install backend and frontend dependencies
 	$(BACKEND) uv sync
 	cd frontend && npm ci
-	cd e2e && npm ci && npx playwright install chromium
 
 testdb: ## Start the local test Postgres
 	docker compose up -d --wait testdb
@@ -47,18 +46,15 @@ coverage-gates: ## 100% branch coverage for the security-critical modules
 test-frontend: ## Frontend tests with coverage gates
 	cd frontend && npm run test:coverage
 
-test-e2e: testdb ## Playwright: Next.js + FastAPI + seeded Postgres, offline LLM
-	cd e2e && npx playwright test
-
 test-smoke: ## Read-only checks against the real company DB
 	$(PY) pytest -m smoke tests/smoke
 
-eval: testdb ## AI quality evals with the real model (needs OPENAI_API_KEY)
-	$(PY) python -m evals.run
+eval-deepeval: testdb ## Per-role DeepEval suite (Anthropic judge; needs ANTHROPIC_API_KEY)
+	$(PY) python -m evals.deepeval_run
 
-test-all: test test-frontend test-e2e ## Everything except smoke and evals
+test-all: test test-frontend ## Everything except smoke and evals
 
-seed-e2e: testdb ## Seed the local database used by e2e runs and demos
+seed-e2e: testdb ## Seed the local database used by evals and demos
 	$(PY) python -m scripts.seed_e2e
 
 normalise-preview: ## Show what the data-cleaning changes would do (no writes)

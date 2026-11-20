@@ -20,6 +20,7 @@ dependencies = [
   "langchain-openai>=0.2",
   "langsmith>=0.2",
   "anthropic>=1.0",
+  "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
@@ -29,11 +30,12 @@ dev = [
   "httpx>=0.28",
   "ruff>=0.8",
   "mypy>=1.13",
+  "deepeval>=4.3.4",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --strict-markers -m 'not smoke and not eval'"
+addopts = "-q --strict-markers -m 'not smoke'"
 markers = [
   "unit: pure code, no database",
   "integration: needs the local test database",
@@ -42,14 +44,13 @@ markers = [
   "security: attack corpora",
   "arch: import rules",
   "smoke: read-only checks on the real company database (opt-in)",
-  "eval: real model evals on LangSmith (opt-in)",
 ]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["app"]
 branch = true
-# Thin adapter over the OpenAI SDK; exercised by the LangSmith evals, not unit tests.
+# Thin adapter over the OpenAI SDK; exercised by the real-model eval, not unit tests.
 omit = ["app/llm/openai_llm.py"]
 
 [tool.coverage.report]

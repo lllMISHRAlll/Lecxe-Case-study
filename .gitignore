@@ -18,8 +18,6 @@ htmlcov/
 node_modules/
 .next/
 frontend/coverage/
-playwright-report/
-test-results/
 
 # os
 .DS_Store
@@ -30,3 +28,6 @@ test-results/
 # Company data backups stay local (rollback reads them from disk)
 db/changes/*/backup.csv
 db/changes/*/rollback.sql
+
+# DeepEval run reports
+backend/evals/reports/

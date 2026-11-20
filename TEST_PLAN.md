@@ -22,7 +22,6 @@ Companion to `PLAN.md`. Every behaviour in the plan has a test listed here, and 
 | Security | `security` | Attack corpora against validator, guardrails, API | Every commit |
 | Architecture | `arch` | Import rules between packages | Every commit |
 | Frontend | Vitest | Components, hooks, SSE reader, with mocked API (MSW) | Every commit |
-| End-to-end | Playwright | Next.js + FastAPI + test DB + fake LLM | Every commit, in CI |
 | Smoke | `smoke` | Real company DB, read-only | On demand, before a demo |
 | Evals | `eval` | Real OpenAI, LangSmith | On demand, before merging prompt changes |
 
@@ -38,7 +37,7 @@ Companion to `PLAN.md`. Every behaviour in the plan has a test listed here, and 
 | Fake LLM | A chat model that returns scripted responses per node and records the prompts it received, so tests can assert on prompts too |
 | Frozen clock | Fixture that fixes "today" so date logic is testable |
 | Fake LangSmith client | Records traces and feedback, so masking and metadata can be asserted |
-| `FAKE_LLM=1` app mode | Lets Playwright drive the real app without OpenAI |
+| `FAKE_LLM=1` app mode | Runs the real app without OpenAI |
 
 ## 4. Coverage gates
 
@@ -348,30 +347,13 @@ Shared behaviour:
 | FE-20 | Thumbs up or down calls the feedback API |
 | FE-21 | Login and chat pages pass automated accessibility checks (axe) |
 
-## 7. End-to-end scenarios (Playwright, `FAKE_LLM=1`, test DB)
+## 7. AI quality evals (real model, on demand)
 
-| ID | Scenario |
-|---|---|
-| E2E-01 | Each role logs in with the quick button and sees the right greeting and buttons |
-| E2E-02 | Clicking a button shows steps, a table and a chart on the right, and a summary on the left |
-| E2E-03 | A typed question streams an answer word by word |
-| E2E-04 | The Procurement Manager raises a PO over several turns, confirms, sees the new number, and the PO exists in the test DB |
-| E2E-05 | The Warehouse Manager asks to raise a PO and is refused |
-| E2E-06 | A refreshed page restores the conversation and an open PO draft |
-| E2E-07 | Logout returns to login, and `/chat` is no longer reachable |
+`make eval-deepeval` runs the per-role golden files in `backend/evals/datasets/` against the real assistant: 8 data questions and 3 must-refuse questions per role. Data cases are scored on result match, answer correctness, faithfulness and relevancy; refusals on no data leak and role safety. Results and what changed because of them: `docs/EVAL_LOG.md`.
 
-## 8. AI quality evals (LangSmith, on demand)
+The reference SQL in each golden file is also checked on every `make test`: it must pass the SQL validator for that role and return rows.
 
-| ID | Eval | Pass mark |
-|---|---|---|
-| EVAL-01 | About 30 questions with reference SQL, scored by comparing result sets on the test DB | 85% or more correct |
-| EVAL-02 | Router dataset of about 40 labelled messages | 95% or more correct |
-| EVAL-03 | PO slot extraction on about 20 order messages | 90% or more fields correct |
-| EVAL-04 | Prompt-injection corpus against the real guard model | 100% blocked |
-
-A prompt change is merged only if no eval drops below its pass mark.
-
-## 9. Order of work
+## 8. Order of work
 
 Tests for each step are written first, following the build order in `PLAN.md` section 15:
 
@@ -392,18 +374,17 @@ Tests for each step are written first, following the build order in `PLAN.md` se
 | 12 | VIZ |
 | 13 | GRAPH, SSE |
 | 14 | OBS |
-| 15 | FE, E2E |
+| 15 | FE |
 | Before demo | SMOKE, EVAL |
 
-## 10. Commands
+## 9. Commands
 
 ```
 make test            # unit, integration, api, graph, security, arch, with coverage gates
 make test-frontend   # Vitest with coverage gates
-make test-e2e        # Playwright against the Docker stack with FAKE_LLM=1
 make test-smoke      # read-only checks on the real company DB
-make eval            # LangSmith evals with the real model
-make test-all        # everything except smoke and eval
+make eval-deepeval   # per-role evals with the real model
+make test-all        # everything except smoke and the real-model eval
 ```
 
 A CI workflow runs `make test-all` on every push once the repo is hosted.

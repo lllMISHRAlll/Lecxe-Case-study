@@ -1,26 +1,16 @@
-"""The eval datasets themselves must be valid: references run and pass the validator."""
-
-import json
-from pathlib import Path
+"""The golden eval files must be valid: every reference SQL runs and passes the validator."""
 
 import pytest
 
 from app.auth.roles import Role
 from app.sql.executor import QueryExecutor
 from app.sql.validator import SqlValidator
+from evals.turn import ROLES, load_role_cases
 
-DATASETS = Path(__file__).resolve().parents[3] / "evals" / "datasets"
-SQL_CASES = json.loads((DATASETS / "sql_golden.json").read_text())
-
-
-def test_dataset_sizes_match_the_plan():
-    assert len(SQL_CASES) == 30
-    assert len(json.loads((DATASETS / "router.json").read_text())) == 40
-    assert len(json.loads((DATASETS / "po_extract.json").read_text())) == 20
+ROLE_CASES = [(role, c) for role in ROLES for c in load_role_cases(role) if c["kind"] == "data"]
 
 
-@pytest.mark.parametrize("case", SQL_CASES, ids=[c["question"][:40] for c in SQL_CASES])
-def test_reference_sql_is_valid_and_returns_rows(db, case):
-    validated = SqlValidator(row_cap=500).validate(case["reference_sql"], Role(case["role"]))
-    result = QueryExecutor(db.read_engine, row_cap=500).run(validated.sql)
-    assert result.row_count > 0
+@pytest.mark.parametrize("role,case", ROLE_CASES, ids=[c["id"] for _, c in ROLE_CASES])
+def test_role_golden_sql_is_valid_for_that_role_and_returns_rows(db, role, case):
+    validated = SqlValidator(row_cap=500).validate(case["reference_sql"], Role(role))
+    assert QueryExecutor(db.read_engine, row_cap=500).run(validated.sql).row_count > 0

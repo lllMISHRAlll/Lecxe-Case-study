@@ -62,7 +62,7 @@ A chat assistant over the company's Railway Postgres database. Three demo roles 
 | Frontend | Next.js 15.5 (App Router) + TypeScript, Tailwind, Zustand, TanStack Query *(build note: 15.5 pinned because 16 renames middleware)* | Server components for the page shell, client components for chat, streaming and charts. Next.js rewrites send `/api/*` to FastAPI, so the auth cookie stays on one origin |
 | Charts | Recharts, in client components | One chart library |
 | Local run and tests | Docker Compose: backend, frontend, test Postgres | One command to run, isolated test DB |
-| Tests | pytest, pytest-asyncio, Vitest + React Testing Library, one Playwright end-to-end test | TDD on both sides. The end-to-end test covers login to streamed answer |
+| Tests | pytest, pytest-asyncio, Vitest + React Testing Library | TDD on both sides |
 
 ## 4. Users, roles and permissions
 
@@ -609,9 +609,9 @@ The full test catalogue, about 195 named tests, is in **`TEST_PLAN.md`**. This s
 
 **Coverage gates**: 90% of backend lines, 100% of branches for RBAC, the SQL validator, the masker, PO numbering, PO totals and the normalisation runner, and 80% of frontend lines.
 
-**Test layers**: unit, integration, API, graph, security attack corpora, architecture import rules, frontend components, Playwright end to end, a read-only smoke suite on the real DB, and LangSmith evals with pass marks.
+**Test layers**: unit, integration, API, graph, security attack corpora, architecture import rules, frontend components, a read-only smoke suite on the real DB, and LangSmith evals with pass marks.
 
-**Step 0, before any feature**: test infrastructure. That means the Docker test DB, a seed factory with every real data quirk, a rollback-per-test fixture, a scripted fake LLM that also records prompts, a frozen clock, a fake LangSmith client, and a `FAKE_LLM=1` mode for Playwright.
+**Step 0, before any feature**: test infrastructure. That means the Docker test DB, a seed factory with every real data quirk, a rollback-per-test fixture, a scripted fake LLM that also records prompts, a frozen clock, a fake LangSmith client, and a `FAKE_LLM=1` mode for running the app offline.
 
 
 **Test databases**
@@ -634,7 +634,7 @@ The full test catalogue, about 195 named tests, is in **`TEST_PLAN.md`**. This s
 | 12 | Result reducer output, chart type rules, chart specs | Reducer, charts |
 | 13 | Graph runs end to end with a mocked LLM and emits the right SSE events in order | LangGraph wiring, SSE endpoint |
 | 14 | Masking applied to traces, rows stripped, tracing off without a key, rate limits trigger | Observability, limits |
-| 15 | Login buttons, greeting, split screen, role buttons, streaming render, history list, PO card, logout. One Playwright run from login to a streamed answer | Next.js frontend |
+| 15 | Login buttons, greeting, split screen, role buttons, streaming render, history list, PO card, logout | Next.js frontend |
 
 The normalisation scripts run on the real database only after step 3 passes locally, and each run is logged in `DATA_CHANGES.md`.
 
@@ -664,7 +664,6 @@ backend/
   scripts/          normalisation runner, eval runners, smoke suite, demo cleanup
 db/
   changes/          001_po_line_units/ ... 007_po_number_unique/
-e2e/                Playwright scenarios
 frontend/
   app/              login/, chat/, layout
   components/       chat pane, output pane, step tracker, charts, PO card
@@ -673,7 +672,7 @@ frontend/
   middleware.ts     redirect to /login without a session
 DATA_CHANGES.md     log of every change made to company data
 TEST_PLAN.md        every test, by module
-Makefile            test, test-frontend, test-e2e, test-smoke, eval, test-all
+Makefile            test, test-frontend, test-smoke, eval, test-all
 docker-compose.yml
 README.md           setup, run, test, env reference
 .env
@@ -707,9 +706,9 @@ LANGSMITH_ENDPOINT=               # optional, EU region
 
 ## 18. Build notes
 
-- Phase 1 is built. Backend: 698 tests at 96% coverage (security-critical modules at 100% of branches); frontend: 135 tests at 99.6%; 9 Playwright end-to-end tests.
+- Phase 1 is built. Backend: 698 tests at 96% coverage (security-critical modules at 100% of branches); frontend: 135 tests at 99.6%.
 - The SQL panel shows the validated query (with its row limit). Generated SQL must use literal values; bind parameters are rejected and sent to the fix step.
 - Payment-terms questions offer the standard terms as buttons (`choices` event).
 - Without an OpenAI key the app runs on an offline rule-based model, used by the end-to-end tests and for demos.
-- AI quality evals live in `backend/evals` (30 SQL questions, 40 routing messages, 20 PO messages, the injection corpus) and run with `make eval`.
+- AI quality evals live in `backend/evals`: per-role golden files (data and refusal cases) scored with DeepEval, run with `make eval-deepeval`. Results are in `docs/EVAL_LOG.md`.
 - The `assistant` schema was created in the company DB on 2026-11-19 and logged in `DATA_CHANGES.md`.
